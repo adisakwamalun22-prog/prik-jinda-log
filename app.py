@@ -1,5 +1,8 @@
 # app.py
 
+from dotenv import load_dotenv
+load_dotenv() # 🟢 นี่คือคำสั่งให้อ่านไฟล์ .env (ต้องอยู่บนสุด)
+
 from flask import Flask, render_template, request, jsonify
 from extensions import db  # 🟢 Import db จาก extensions
 from models import Project, Category, Transaction, AuditLog
