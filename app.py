@@ -3,31 +3,32 @@
 from flask import Flask, render_template, request, jsonify
 from models import db, Transaction, Category, Project, AuditLog
 from sqlalchemy.exc import IntegrityError
-import os # 🟢 เพิ่มบรรทัดนี้
+import os 
 
-# การตั้งค่าแอปพลิเคชัน
 app = Flask(__name__)
 
-# ------------------------------------------------------------------
-# 🟢 แก้ไขส่วนนี้: เปลี่ยนจาก SQLite เป็น PostgreSQL (Neon)
-# ------------------------------------------------------------------
-DATABASE_URL = os.environ.get('DATABASE_URL') # ดึง Connection String จาก Render Environment
-
-# ตรวจสอบและแก้ไข "postgres://" เป็น "postgresql://"
+# --- Database Configuration ---
+DATABASE_URL = os.environ.get('DATABASE_URL') 
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
     
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# ------------------------------------------------------------------
 
-db.init_app(app)
+db.init_app(app) 
 
 # ===============================================
-# 🛠️ ฟังก์ชันสำหรับสร้างฐานข้อมูล
+# 🛠️ 🟢 ฟังก์ชันสำหรับสร้างฐานข้อมูล (NEW)
 # ===============================================
-with app.app_context():
-    db.create_all()
+# เราจะใช้ @app.before_request เพื่อสร้างตาราง
+# (ทำงานใน Runtime ของ Gunicorn ซึ่งมี DATABASE_URL แล้ว)
+@app.before_request
+def create_tables():
+    # ตั้งค่า "flag" ใน app context เพื่อให้แน่ใจว่ามันทำงานแค่ครั้งเดียว
+    if not hasattr(app, 'tables_created'):
+        with app.app_context():
+            db.create_all()
+        app.tables_created = True # ตั้ง flag ว่าสร้างแล้ว
 
 # ===============================================
 # 🟢 ฟังก์ชัน Helper: สำหรับบันทึก Log
