@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌶️ บันทึกรายรับ - รายจ่าย</title>
+    <title>🌶️ Multi-Project Log</title>
     <style>
         :root {
             --primary-color: #022344;
-            --accent-color: #f44336; /* สีแดงสำหรับลบ/เตือน */
-            --success-color: #2e7d32; /* สีเขียวสำหรับรายรับ */
-            --error-color: #d32f2f; /* สีแดงสำหรับรายจ่าย */
+            --accent-color: #f44336; 
+            --success-color: #2e7d32;
+            --error-color: #d32f2f;
             --bg-light: #f4f7f9;
         }
         body {
@@ -41,10 +41,19 @@
             padding-left: 10px;
             margin-top: 30px;
         }
-        
-        /* --- Forms and Inputs --- */
-        .form-group {
-            margin-bottom: 15px;
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #003366;
         }
         .input-row {
             display: grid;
@@ -59,242 +68,285 @@
             border: 1px solid #ccc;
             border-radius: 6px;
             font-size: 1em;
-            transition: border-color 0.3s;
         }
-        input:focus, select:focus {
-            border-color: var(--primary-color);
-            outline: none;
-        }
-        button {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 12px 15px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            font-size: 1em;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #003366; /* สีเข้มขึ้น */
-        }
-
-        /* --- Category Management --- */
-        #addCategorySection {
-            background-color: var(--bg-light);
-            padding: 15px;
-            margin-top: 20px;
-            border: 1px dashed var(--primary-color);
-            border-radius: 8px;
-        }
-        .category-input-row {
-            display: flex;
-            gap: 10px;
-        }
-        .category-input-row input {
-            flex-grow: 1;
-        }
-        .category-input-row select, .category-input-row button {
-            width: 30%;
-            min-width: 100px;
-        }
-
-        /* --- Summary Dashboard --- */
         .summary {
             background-color: #e0f7fa;
             padding: 20px;
             margin-top: 30px;
             border-radius: 8px;
             display: flex;
-            flex-wrap: wrap; /* ให้ห่อลงบรรทัดใหม่เมื่อหน้าจอเล็ก */
+            flex-wrap: wrap;
             justify-content: space-around;
             text-align: center;
             gap: 15px;
         }
-        .summary > div {
-            flex-basis: 30%; /* แบ่งเป็น 3 คอลัมน์บนจอใหญ่ */
-            min-width: 150px; /* ไม่ให้เล็กเกินไปบนจอมือถือ */
-            padding: 5px;
-        }
         .income { color: var(--success-color); font-weight: bold; }
         .expense { color: var(--error-color); font-weight: bold; }
         .profit { color: var(--primary-color); font-weight: bold; font-size: 1.4em; }
-        .profit.negative { color: var(--error-color); }
-
-        /* --- Table Styling (Responsive Table) --- */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            font-size: 0.9em;
+        
+        /* --- Project List Specifics --- */
+        #projectList {
+            list-style: none;
+            padding: 0;
         }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px 8px;
-            text-align: left;
+        .project-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s;
         }
-        th {
-            background-color: var(--primary-color);
-            color: white;
-            position: sticky; /* ทำให้หัวตารางติดด้านบนเมื่อเลื่อน */
-            top: 0;
+        .project-item:hover {
+            background-color: #e9e9e9;
         }
-        .delete-btn {
-            background-color: var(--accent-color);
-            width: auto;
-            padding: 5px 10px;
-            font-size: 0.9em;
+        .project-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--primary-color);
         }
-        .delete-btn:hover {
-            background-color: #b71c1c;
-        }
+        
+        /* --- Transaction Table --- */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
+        th, td { border: 1px solid #ddd; padding: 10px 8px; text-align: left; }
+        th { background-color: var(--primary-color); color: white; }
         
         /* --- Mobile Optimization --- */
         @media (max-width: 768px) {
-            .container {
-                margin: 10px auto;
-                padding: 15px;
-            }
-            .input-row {
-                grid-template-columns: 1fr; /* บนมือถือแสดงเป็นคอลัมน์เดียว */
-            }
-            .summary {
-                flex-direction: column; /* บนมือถือเรียงจากบนลงล่าง */
-            }
-            .summary > div {
-                flex-basis: 100%;
-            }
+            .input-row { grid-template-columns: 1fr; }
+            .summary { flex-direction: column; }
+            .summary > div { flex-basis: 100%; }
+            .category-input-row { flex-direction: column; }
+            .category-input-row button, .category-input-row select { width: 100%; }
             
-            /* Responsive Table: ซ่อนคอลัมน์ที่ไม่จำเป็นบนจอเล็ก */
-            table, thead, tbody, th, td, tr {
-                display: block;
-            }
-            thead tr {
-                position: absolute;
-                top: -9999px;
-                left: -9999px;
-            }
-            td {
-                border: none;
-                border-bottom: 1px solid #eee;
-                position: relative;
-                padding-left: 50%; /* เว้นที่สำหรับ Label */
-                text-align: right;
-            }
-            td:before {
-                position: absolute;
-                top: 6px;
-                left: 6px;
-                width: 45%;
-                padding-right: 10px;
-                white-space: nowrap;
-                content: attr(data-label); /* ดึง Label จาก data-label ใน HTML */
-                font-weight: bold;
-                text-align: left;
-                color: var(--primary-color);
-            }
+            /* Responsive Table (Simplified) */
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; top: -9999px; left: -9999px; }
+            td { border: none; border-bottom: 1px solid #eee; position: relative; padding-left: 40%; text-align: right; }
+            td:before { position: absolute; top: 6px; left: 6px; width: 35%; padding-right: 10px; white-space: nowrap; content: attr(data-label); font-weight: bold; text-align: left; color: var(--primary-color); }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🌶️ บันทึกรายรับ-รายจ่าย</h1>
+    <header>
+        <h1 id="mainTitle">🌶️ จัดการบัญชีโครงการ</h1>
+        <button id="backButton" style="width: auto; padding: 5px 15px; margin-bottom: 15px; display: none;" onclick="showProjectList()">← กลับไปรายการโครงการ</button>
+        <p id="currentProjectName" style="font-size: 1.3em; font-weight: bold; color: var(--accent-color); text-align: center;"></p>
+    </header>
     <hr>
 
-    <h2>📝 เพิ่มรายการใหม่</h2>
-    <form id="transactionForm">
-        <div class="input-row">
+    <div id="projectListView">
+        <h2>📂 โครงการทั้งหมด</h2>
+        <ul id="projectList">
+            </ul>
+        
+        <div id="addProjectSection" style="margin-top: 30px;">
+            <h2>+ เพิ่มโครงการใหม่</h2>
+            <form id="newProjectForm">
+                <div class="form-group">
+                    <input type="text" id="new_project_name" placeholder="ชื่อโครงการ (เช่น: ปลูกพริกปี 2026)" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="new_project_description" placeholder="คำอธิบาย (Optional)">
+                </div>
+                <button type="submit">สร้างโครงการ</button>
+            </form>
+        </div>
+    </div>
+
+
+    <div id="transactionView" style="display: none;">
+        
+        <h2>📝 เพิ่มรายการใหม่</h2>
+        <form id="transactionForm">
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="type">ประเภท:</label>
+                    <select id="type" required onchange="filterCategories()">
+                        <option value="Expense">รายจ่าย</option>
+                        <option value="Income">รายรับ</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="category_id">หมวดหมู่:</label>
+                    <select id="category_id" required>
+                        </select>
+                </div>
+                <div class="form-group">
+                    <label for="amount">จำนวนเงิน:</label>
+                    <input type="number" id="amount" step="0.01" min="0.01" required>
+                </div>
+            </div>
             <div class="form-group">
-                <label for="type">ประเภท:</label>
-                <select id="type" required onchange="filterCategories()">
+                <label for="description">คำอธิบาย (optional):</label>
+                <input type="text" id="description" maxlength="200">
+            </div>
+            <button type="submit">บันทึกรายการ</button>
+        </form>
+
+        <div id="addCategorySection" style="margin-top: 20px;">
+            <h3>+ จัดการ/เพิ่มหมวดหมู่ใหม่</h3>
+            <div class="category-input-row">
+                <input type="text" id="new_category_name" placeholder="ชื่อหมวดหมู่ใหม่" style="flex-grow: 2;">
+                <select id="new_category_type">
                     <option value="Expense">รายจ่าย</option>
                     <option value="Income">รายรับ</option>
                 </select>
-            </div>
-            <div class="form-group">
-                <label for="category_id">หมวดหมู่:</label>
-                <select id="category_id" required>
-                    </select>
-            </div>
-            <div class="form-group">
-                <label for="amount">จำนวนเงิน:</label>
-                <input type="number" id="amount" step="0.01" min="0.01" required>
+                <button onclick="addNewCategory(event)">เพิ่ม</button>
             </div>
         </div>
-        <div class="form-group">
-            <label for="description">คำอธิบาย (optional):</label>
-            <input type="text" id="description" maxlength="200">
+
+        <hr>
+
+        <h2>📊 สรุปผล</h2>
+        <div class="summary">
+            <div>รายรับรวม: <span id="totalIncome" class="income">0.00 บาท</span></div>
+            <div>รายจ่ายรวม: <span id="totalExpense" class="expense">0.00 บาท</span></div>
+            <div>**กำไรสุทธิ:** <span id="netProfit" class="profit">0.00 บาท</span></div>
         </div>
-        <button type="submit">บันทึกรายการ</button>
-    </form>
-    
-    <div id="addCategorySection">
-        <h3>+ จัดการ/เพิ่มหมวดหมู่ใหม่</h3>
-        <div class="category-input-row">
-            <input type="text" id="new_category_name" placeholder="ชื่อหมวดหมู่ใหม่" style="flex-grow: 2;">
-            <select id="new_category_type">
-                <option value="Expense">รายจ่าย</option>
-                <option value="Income">รายรับ</option>
-            </select>
-            <button onclick="addNewCategory(event)">เพิ่ม</button>
-        </div>
+
+        <hr>
+
+        <h2>รายการทั้งหมด</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>วันที่</th>
+                    <th>ประเภท</th>
+                    <th>หมวดหมู่</th>
+                    <th>จำนวนเงิน</th>
+                    <th>คำอธิบาย</th>
+                    <th>ลบ</th>
+                </tr>
+            </thead>
+            <tbody id="transactionTableBody">
+                </tbody>
+        </table>
     </div>
-
-    <hr>
-
-    <h2>📊 สรุปผล</h2>
-    <div class="summary">
-        <div>รายรับรวม: <span id="totalIncome" class="income">0.00 บาท</span></div>
-        <div>รายจ่ายรวม: <span id="totalExpense" class="expense">0.00 บาท</span></div>
-        <div>**กำไรสุทธิ:** <span id="netProfit" class="profit">0.00 บาท</span></div>
-    </div>
-
-    <hr>
-
-    <h2>รายการทั้งหมด</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>วันที่</th>
-                <th>ประเภท</th>
-                <th>หมวดหมู่</th>
-                <th>จำนวนเงิน</th>
-                <th>คำอธิบาย</th>
-                <th>ลบ</th>
-            </tr>
-        </thead>
-        <tbody id="transactionTableBody">
-            </tbody>
-    </table>
 
 </div>
 
 <script>
-    const form = document.getElementById('transactionForm');
+    const projectListView = document.getElementById('projectListView');
+    const transactionView = document.getElementById('transactionView');
+    const backButton = document.getElementById('backButton');
+    const mainTitle = document.getElementById('mainTitle');
+    const currentProjectName = document.getElementById('currentProjectName');
+    
+    // Global State
+    let currentProjectId = null;
+    let allCategories = [];
+    
+    // DOM Elements for Transaction View (ใช้โค้ดเดิม)
+    const projectListEl = document.getElementById('projectList');
+    const newProjectForm = document.getElementById('newProjectForm');
+    const transactionForm = document.getElementById('transactionForm');
     const tableBody = document.getElementById('transactionTableBody');
     const totalIncomeEl = document.getElementById('totalIncome');
     const totalExpenseEl = document.getElementById('totalExpense');
     const netProfitEl = document.getElementById('netProfit');
     const categorySelect = document.getElementById('category_id');
     const typeSelect = document.getElementById('type');
-    
-    let allCategories = []; 
 
+
+    // ------------------------------------------------------------------
+    // 🟢 NAVIGATION AND VIEW MANAGEMENT
+    // ------------------------------------------------------------------
+
+    function showProjectList() {
+        currentProjectId = null;
+        mainTitle.textContent = '🌶️ จัดการบัญชีโครงการ';
+        currentProjectName.textContent = '';
+        backButton.style.display = 'none';
+        projectListView.style.display = 'block';
+        transactionView.style.display = 'none';
+        fetchProjects();
+    }
+
+    function showTransactionView(projectId, projectName) {
+        currentProjectId = projectId;
+        mainTitle.textContent = 'บันทึกรายรับ-รายจ่าย';
+        currentProjectName.textContent = `โครงการ: ${projectName}`;
+        backButton.style.display = 'block';
+        projectListView.style.display = 'none';
+        transactionView.style.display = 'block';
+        
+        // Load data for the selected project
+        fetchCategories(); 
+        fetchTransactions();
+    }
+
+    // ------------------------------------------------------------------
+    // 🟢 API: PROJECTS
+    // ------------------------------------------------------------------
+
+    async function fetchProjects() {
+        projectListEl.innerHTML = '<li>กำลังโหลดโครงการ...</li>';
+        const response = await fetch('/api/projects');
+        const projects = await response.json();
+        
+        projectListEl.innerHTML = '';
+        if (projects.length === 0) {
+             projectListEl.innerHTML = '<li>ยังไม่มีโครงการ! โปรดสร้างโครงการใหม่ด้านล่าง.</li>';
+             return;
+        }
+
+        projects.forEach(p => {
+            const li = document.createElement('li');
+            li.className = 'project-item';
+            li.innerHTML = `<span class="project-name">${p.name}</span><span>${p.description}</span>`;
+            li.onclick = () => showTransactionView(p.id, p.name);
+            projectListEl.appendChild(li);
+        });
+    }
+
+    newProjectForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('new_project_name').value.trim();
+        const description = document.getElementById('new_project_description').value.trim();
+
+        if (!name) { alert('โปรดระบุชื่อโครงการ'); return; }
+
+        const response = await fetch('/api/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, description: description }),
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert(`โครงการ "${name}" ถูกสร้างสำเร็จ และเพิ่ม Master Data เริ่มต้นแล้ว!`);
+            newProjectForm.reset();
+            fetchProjects();
+        } else {
+            alert('สร้างโครงการไม่สำเร็จ: ' + result.message);
+        }
+    });
+
+    // ------------------------------------------------------------------
+    // 🟢 API & LOGIC: CATEGORIES (ต้องใช้ project_id)
+    // ------------------------------------------------------------------
+    
     async function fetchCategories() {
-        try {
-            const response = await fetch('/api/categories');
-            allCategories = await response.json();
-            filterCategories();
-        } catch(error) { console.error('Error fetching categories:', error); }
+        if (!currentProjectId) return;
+        const response = await fetch(`/api/projects/${currentProjectId}/categories`);
+        allCategories = await response.json();
+        filterCategories();
     }
 
     function filterCategories() {
+        // (ใช้ Logic เดิม)
         const selectedType = typeSelect.value;
         const filtered = allCategories.filter(cat => cat.type === selectedType);
         
         categorySelect.innerHTML = '';
+        // ... (Logic การสร้าง Option) ...
         if (filtered.length === 0) {
             const opt = document.createElement('option');
             opt.textContent = '--- ไม่มีหมวดหมู่ ---';
@@ -314,12 +366,14 @@
 
     async function addNewCategory(e) {
         e.preventDefault();
+        if (!currentProjectId) return;
+        
         const name = document.getElementById('new_category_name').value.trim();
         const type = document.getElementById('new_category_type').value;
 
         if (!name) { alert('โปรดระบุชื่อหมวดหมู่'); return; }
 
-        const response = await fetch('/api/categories', {
+        const response = await fetch(`/api/projects/${currentProjectId}/categories`, { // 🟢 URL ใช้ project_id
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: name, type: type }),
@@ -336,14 +390,49 @@
         }
     }
 
+
+    // ------------------------------------------------------------------
+    // 🟢 API & LOGIC: TRANSACTIONS (ต้องใช้ project_id)
+    // ------------------------------------------------------------------
+    
     async function fetchTransactions() {
-        const response = await fetch('/api/transactions');
+        if (!currentProjectId) return;
+        const response = await fetch(`/api/projects/${currentProjectId}/transactions`); // 🟢 URL ใช้ project_id
         const transactions = await response.json();
         
         renderTable(transactions);
         renderSummary(transactions);
     }
 
+    transactionForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!currentProjectId) return;
+        
+        const data = {
+            type: typeSelect.value,
+            category_id: document.getElementById('category_id').value,
+            amount: parseFloat(document.getElementById('amount').value),
+            description: document.getElementById('description').value.trim()
+        };
+
+        const response = await fetch(`/api/projects/${currentProjectId}/transactions`, { // 🟢 URL ใช้ project_id
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert('บันทึกสำเร็จ!');
+            transactionForm.reset(); 
+            fetchTransactions(); 
+        } else {
+            alert('บันทึกไม่สำเร็จ! ' + result.message);
+        }
+    });
+
+    // ... (renderTable, renderSummary, handleDelete function ใช้โค้ดเดิม)
     function renderTable(transactions) {
         tableBody.innerHTML = '';
         transactions.forEach(t => {
@@ -351,7 +440,6 @@
             const typeClass = t.type === 'Income' ? 'income' : 'expense';
             const row = tableBody.insertRow();
             
-            // 🟢 เพิ่ม data-label สำหรับ Responsive Table
             row.innerHTML = `
                 <td data-label="วันที่">${date}</td>
                 <td data-label="ประเภท" class="${typeClass}">${t.type === 'Income' ? 'รายรับ' : 'รายจ่าย'}</td>
@@ -385,34 +473,6 @@
         netProfitEl.classList.toggle('negative', netProfit < 0);
     }
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const data = {
-            type: typeSelect.value,
-            category_id: document.getElementById('category_id').value,
-            amount: parseFloat(document.getElementById('amount').value),
-            description: document.getElementById('description').value.trim()
-        };
-
-        const response = await fetch('/api/transactions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            alert('บันทึกสำเร็จ!');
-            form.reset(); 
-            fetchTransactions(); 
-            fetchCategories(); 
-        } else {
-            alert('บันทึกไม่สำเร็จ! ' + result.message);
-        }
-    });
-
     async function handleDelete(e) {
         const transactionId = e.target.dataset.id;
         if (!confirm(`คุณแน่ใจหรือไม่ที่จะลบรายการ ID: ${transactionId} ?`)) { return; }
@@ -429,8 +489,11 @@
         }
     }
 
-    fetchCategories();
-    fetchTransactions();
+
+    // ------------------------------------------------------------------
+    // 🟢 INITIALIZATION
+    // ------------------------------------------------------------------
+    showProjectList(); // เริ่มต้นด้วยการแสดงรายการโครงการ
 </script>
 
 </body>

@@ -1,7 +1,7 @@
 # app.py
 
 from flask import Flask, render_template, request, jsonify, redirect, url_for
-from models import db, Transaction, Category # 🟢 Import Category
+from models import db, Transaction, Category, Project
 from sqlalchemy.exc import IntegrityError
 import os
 
@@ -15,65 +15,87 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 # ===============================================
-# 🛠️ ฟังก์ชันสำหรับสร้างฐานข้อมูลและเพิ่ม Master Data เริ่มต้น
+# 🛠️ ฟังก์ชันสำหรับสร้างฐานข้อมูล
 # ===============================================
 
 with app.app_context():
-    # ถ้าไฟล์ site.db ยังไม่มีอยู่ จะทำการสร้างฐานข้อมูลและตาราง
-    if not os.path.exists('site.db'):
-        db.create_all()
-        print("Database 'site.db' created and tables initialized.")
-    else:
-        # 💡 สำคัญ: เนื่องจากเราเพิ่มตาราง Category การรัน db.create_all() ซ้ำ
-        # อาจทำให้เกิดปัญหาถ้าโครงสร้างเก่ามีข้อมูลอยู่แล้ว
-        # ในสภาพแวดล้อมจริง ควรใช้ Flask Migrate (Alembic)
-        # แต่สำหรับโปรเจกต์นี้ เราจะใช้ db.create_all() เพื่อให้มั่นใจว่าตาราง Category ถูกสร้าง
-        db.create_all() 
-
-    # 🟢 เพิ่ม Master Data เริ่มต้น (ถ้ายังไม่มี)
-    if Category.query.count() == 0:
-        initial_categories = [
-            {'name': 'ยอดขายพริก', 'type': 'Income'},
-            {'name': 'เงินสนับสนุน', 'type': 'Income'},
-            {'name': 'ค่าเมล็ดพันธุ์', 'type': 'Expense'},
-            {'name': 'ค่าปุ๋ย/ยา', 'type': 'Expense'},
-            {'name': 'ค่าแรงงาน', 'type': 'Expense'},
-            {'name': 'ค่าน้ำมัน/ไฟฟ้า', 'type': 'Expense'},
-        ]
-        for cat in initial_categories:
-            new_cat = Category(name=cat['name'], type=cat['type'])
-            db.session.add(new_cat)
-        try:
-            db.session.commit()
-            print("Initial Categories added.")
-        except IntegrityError:
-            db.session.rollback()
-            print("Initial Categories already exist.")
+    # 💡 สำคัญ: เนื่องจากมีการเปลี่ยนโครงสร้างหลัก เราจะรัน db.create_all() 
+    # เพื่อสร้างตาราง Project, Category, Transaction ใหม่
+    db.create_all()
 
 
 # ===============================================
-# 🌐 Routes: ส่วนสำหรับให้บริการหน้าจอหลัก
+# 🌐 Routes: ส่วนสำหรับให้บริการหน้าจอหลัก (Project List)
 # ===============================================
 
 @app.route('/')
 def index():
-    """แสดงหน้าจอหลักของแอป (Frontend)"""
+    """แสดงหน้าจอหลัก (รายการโครงการ)"""
     return render_template('index.html')
 
+
 # ===============================================
-# 🟢 API: Categories (Master Data)
+# 🟢 API: Projects (สร้าง/ดึงโครงการ)
 # ===============================================
 
-@app.route('/api/categories', methods=['GET', 'POST'])
-def categories_api():
-    """จัดการ API สำหรับดึงและเพิ่มหมวดหมู่"""
+@app.route('/api/projects', methods=['GET', 'POST'])
+def projects_api():
+    """จัดการ API สำหรับดึงและเพิ่มโครงการ"""
     
-    # GET: ดึงรายการทั้งหมด
     if request.method == 'GET':
-        categories = Category.query.order_by(Category.name).all()
+        projects = Project.query.order_by(Project.name).all()
+        return jsonify([p.to_dict() for p in projects])
+
+    elif request.method == 'POST':
+        data = request.get_json()
+        if not 'name' in data:
+            return jsonify({'message': 'Missing required field: name'}), 400
+        
+        try:
+            new_project = Project(
+                name=data['name'].strip(),
+                description=data.get('description', '')
+            )
+            db.session.add(new_project)
+            db.session.commit()
+            
+            # 💡 เมื่อสร้างโครงการแล้ว ให้เพิ่ม Master Data เริ่มต้นให้โครงการนั้นทันที
+            initial_categories = [
+                {'name': 'ยอดขายพริก', 'type': 'Income'},
+                {'name': 'ค่าเมล็ดพันธุ์', 'type': 'Expense'},
+                {'name': 'ค่าปุ๋ย/ยา', 'type': 'Expense'},
+            ]
+            for cat in initial_categories:
+                new_cat = Category(name=cat['name'], type=cat['type'], project_id=new_project.id)
+                db.session.add(new_cat)
+            db.session.commit()
+
+            return jsonify({'message': 'Project created successfully', 'project': new_project.to_dict()}), 201
+        
+        except IntegrityError:
+            db.session.rollback()
+            return jsonify({'message': 'Project name already exists.'}), 409
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'message': f'An error occurred: {e}'}), 500
+
+
+# ===============================================
+# 🟢 API: Categories (Master Data - อ้างอิง Project)
+# ===============================================
+
+@app.route('/api/projects/<int:project_id>/categories', methods=['GET', 'POST'])
+def categories_api(project_id):
+    """จัดการ API สำหรับดึงและเพิ่มหมวดหมู่ของโครงการนั้น"""
+    
+    if not Project.query.get(project_id):
+        return jsonify({'message': 'Project not found.'}), 404
+
+    if request.method == 'GET':
+        # ดึงเฉพาะหมวดหมู่ของ project_id ที่ระบุ
+        categories = Category.query.filter_by(project_id=project_id).order_by(Category.name).all()
         return jsonify([c.to_dict() for c in categories])
 
-    # POST: เพิ่มหมวดหมู่ใหม่
     elif request.method == 'POST':
         data = request.get_json()
         if not all(k in data for k in ('name', 'type')):
@@ -82,7 +104,8 @@ def categories_api():
         try:
             new_category = Category(
                 name=data['name'].strip(),
-                type=data['type'].strip()
+                type=data['type'].strip(),
+                project_id=project_id # 🟢 ผูกกับ Project ID
             )
             db.session.add(new_category)
             db.session.commit()
@@ -90,60 +113,44 @@ def categories_api():
         
         except IntegrityError:
             db.session.rollback()
-            return jsonify({'message': 'Category name already exists.'}), 409 # Conflict
+            return jsonify({'message': 'Category name already exists in this project.'}), 409
         except Exception as e:
             return jsonify({'message': f'An error occurred: {e}'}), 500
 
-@app.route('/api/categories/<int:category_id>', methods=['DELETE'])
-def delete_category(category_id):
-    """จัดการ API สำหรับลบหมวดหมู่"""
-    
-    category_to_delete = Category.query.get_or_404(category_id)
-    
-    # 💡 ตรวจสอบว่ามี Transaction ที่อ้างอิงหมวดหมู่นี้อยู่หรือไม่
-    if category_to_delete.transactions.count() > 0:
-        return jsonify({'message': 'Cannot delete category: related transactions exist.'}), 409
-    
-    try:
-        db.session.delete(category_to_delete)
-        db.session.commit()
-        return jsonify({'message': f'Category ID {category_id} deleted successfully'}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'message': f'Failed to delete category: {e}'}), 500
-
 
 # ===============================================
-# 🌐 API: Transactions (ปรับปรุงให้ใช้ category_id)
+# 🌐 API: Transactions (อ้างอิง Project)
 # ===============================================
 
-@app.route('/api/transactions', methods=['GET', 'POST'])
-def transactions_api():
-    """จัดการ API สำหรับดึงและบันทึกรายการ"""
+@app.route('/api/projects/<int:project_id>/transactions', methods=['GET', 'POST'])
+def transactions_api(project_id):
+    """จัดการ API สำหรับดึงและบันทึกรายการของโครงการนั้น"""
+
+    if not Project.query.get(project_id):
+        return jsonify({'message': 'Project not found.'}), 404
     
-    # GET: ดึงรายการทั้งหมด
+    # GET: ดึงรายการทั้งหมดของโครงการนั้น
     if request.method == 'GET':
-        transactions = Transaction.query.order_by(Transaction.date_recorded.desc()).all()
-        # 🟢 ดึงชื่อหมวดหมู่ผ่าน relationship ใน to_dict()
+        transactions = Transaction.query.filter_by(project_id=project_id).order_by(Transaction.date_recorded.desc()).all()
         return jsonify([t.to_dict() for t in transactions])
 
-    # POST: บันทึกรายการใหม่
+    # POST: บันทึกรายการใหม่ของโครงการนั้น
     elif request.method == 'POST':
         data = request.get_json()
         
-        # 🟢 ตรวจสอบ category_id แทน category name
         if not all(k in data for k in ('type', 'category_id', 'amount')):
             return jsonify({'message': 'Missing required fields'}), 400
 
         try:
-            # 💡 ตรวจสอบว่า category_id มีอยู่จริง
             category_id = int(data['category_id'])
-            if not Category.query.get(category_id):
-                 return jsonify({'message': 'Invalid category ID.'}), 400
+            # ตรวจสอบว่า Category ID นั้นมีอยู่จริงและอยู่ในโครงการนี้จริงหรือไม่
+            if not Category.query.filter_by(id=category_id, project_id=project_id).first():
+                 return jsonify({'message': 'Invalid category ID or category does not belong to this project.'}), 400
 
             new_transaction = Transaction(
                 type=data['type'],
-                category_id=category_id, # 🟢 ใช้ ID
+                category_id=category_id, 
+                project_id=project_id, # 🟢 ผูกกับ Project ID
                 amount=float(data['amount']),
                 description=data.get('description', '')
             )
@@ -151,10 +158,10 @@ def transactions_api():
             db.session.commit()
             return jsonify({'message': 'Transaction added successfully', 'transaction': new_transaction.to_dict()}), 201
         
-        except ValueError:
-            return jsonify({'message': 'Invalid amount or category ID format'}), 400
         except Exception as e:
+            db.session.rollback()
             return jsonify({'message': f'An error occurred: {e}'}), 500
+
 
 @app.route('/api/transactions/<int:transaction_id>', methods=['DELETE'])
 def delete_transaction(transaction_id):
@@ -176,5 +183,4 @@ def delete_transaction(transaction_id):
 # ===============================================
 
 if __name__ == '__main__': 
-    # รันบนเครื่อง localhost:5000 (ในโหมด Debug)
     app.run(debug=True)
