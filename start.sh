@@ -1,4 +1,3 @@
 #!/usr/bin/env bash
-
-# Run the Gunicorn application using the Python from the created venv
-exec .venv/bin/gunicorn app:app
+# รัน Python Module Gunicorn โดยใช้ Python Binary ใน Environment
+exec python -m gunicorn app:app
