@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌶️ Log รายรับ-รายจ่าย โครงการพริกจินดา</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f7f9;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #022344;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        input[type="number"], input[type="text"], select, input[type="date"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #022344;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #e8eaf6;
+            color: #022344;
+        }
+        .summary {
+            background-color: #e0f7fa;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+        .income { color: #2e7d32; font-weight: bold; }
+        .expense { color: #d32f2f; font-weight: bold; }
+        .profit { color: #022344; font-weight: bold; font-size: 1.2em; }
+        .delete-btn {
+            background-color: #f44336;
+            width: auto;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🌶️ บันทึกรายรับ-รายจ่าย โครงการปลูกพริกจินดา</h1>
+    <hr>
+
+    <h2>📝 เพิ่มรายการใหม่</h2>
+    <form id="transactionForm">
+        <div class="form-group">
+            <label for="type">ประเภท:</label>
+            <select id="type" required>
+                <option value="Expense">รายจ่าย</option>
+                <option value="Income">รายรับ</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="category">หมวดหมู่:</label>
+            <input type="text" id="category" placeholder="เช่น ค่าปุ๋ย, ค่าแรง, ยอดขายพริก" required>
+        </div>
+        <div class="form-group">
+            <label for="amount">จำนวนเงิน:</label>
+            <input type="number" id="amount" step="0.01" min="0.01" required>
+        </div>
+        <div class="form-group">
+            <label for="description">คำอธิบาย (optional):</label>
+            <input type="text" id="description" maxlength="200">
+        </div>
+        <button type="submit">บันทึกรายการ</button>
+    </form>
+
+    <hr>
+
+    <h2>📊 สรุปผล</h2>
+    <div class="summary">
+        <div>รายรับรวม: <span id="totalIncome" class="income">0.00 บาท</span></div>
+        <div>รายจ่ายรวม: <span id="totalExpense" class="expense">0.00 บาท</span></div>
+        <div>**กำไรสุทธิ:** <span id="netProfit" class="profit">0.00 บาท</span></div>
+    </div>
+
+    <hr>
+
+    <h2>รายการทั้งหมด</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>วันที่</th>
+                <th>ประเภท</th>
+                <th>หมวดหมู่</th>
+                <th>จำนวนเงิน</th>
+                <th>คำอธิบาย</th>
+                <th>ลบ</th>
+            </tr>
+        </thead>
+        <tbody id="transactionTableBody">
+            </tbody>
+    </table>
+
+</div>
+
+<script>
+    const form = document.getElementById('transactionForm');
+    const tableBody = document.getElementById('transactionTableBody');
+    const totalIncomeEl = document.getElementById('totalIncome');
+    const totalExpenseEl = document.getElementById('totalExpense');
+    const netProfitEl = document.getElementById('netProfit');
+
+    // ฟังก์ชันดึงข้อมูลและอัปเดต UI
+    async function fetchTransactions() {
+        const response = await fetch('/api/transactions');
+        const transactions = await response.json();
+        
+        // 1. อัปเดตตาราง
+        renderTable(transactions);
+        
+        // 2. อัปเดตสรุปผล
+        renderSummary(transactions);
+    }
+
+    function renderTable(transactions) {
+        tableBody.innerHTML = '';
+        transactions.forEach(t => {
+            const date = new Date(t.date_recorded).toLocaleDateString('th-TH');
+            const typeClass = t.type === 'Income' ? 'income' : 'expense';
+            const row = tableBody.insertRow();
+            
+            row.innerHTML = `
+                <td>${date}</td>
+                <td class="${typeClass}">${t.type === 'Income' ? 'รายรับ' : 'รายจ่าย'}</td>
+                <td>${t.category}</td>
+                <td class="${typeClass}">${parseFloat(t.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                <td>${t.description || '-'}</td>
+                <td><button class="delete-btn" data-id="${t.id}">ลบ</button></td>
+            `;
+        });
+
+        // กำหนด Event Listener สำหรับปุ่มลบทุกปุ่ม
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', handleDelete);
+        });
+    }
+
+    function renderSummary(transactions) {
+        let totalIncome = 0;
+        let totalExpense = 0;
+
+        transactions.forEach(t => {
+            if (t.type === 'Income') {
+                totalIncome += t.amount;
+            } else if (t.type === 'Expense') {
+                totalExpense += t.amount;
+            }
+        });
+
+        const netProfit = totalIncome - totalExpense;
+
+        totalIncomeEl.textContent = totalIncome.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + ' บาท';
+        totalExpenseEl.textContent = totalExpense.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + ' บาท';
+        netProfitEl.textContent = netProfit.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + ' บาท';
+        
+        // เปลี่ยนสีตัวอักษรกำไรสุทธิ
+        netProfitEl.style.color = netProfit >= 0 ? '#2e7d32' : '#d32f2f'; 
+    }
+
+    // ฟังก์ชันจัดการการบันทึกรายการใหม่
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const data = {
+            type: document.getElementById('type').value,
+            category: document.getElementById('category').value.trim(),
+            amount: parseFloat(document.getElementById('amount').value),
+            description: document.getElementById('description').value.trim()
+        };
+
+        const response = await fetch('/api/transactions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (response.ok) {
+            alert('บันทึกสำเร็จ!');
+            form.reset(); // ล้างฟอร์ม
+            fetchTransactions(); // ดึงข้อมูลใหม่
+        } else {
+            alert('บันทึกไม่สำเร็จ! โปรดลองใหม่อีกครั้ง');
+        }
+    });
+
+    // ฟังก์ชันจัดการการลบรายการ
+    async function handleDelete(e) {
+        const transactionId = e.target.dataset.id;
+        if (!confirm(`คุณแน่ใจหรือไม่ที่จะลบรายการ ID: ${transactionId} ?`)) {
+            return;
+        }
+
+        const response = await fetch(`/api/transactions/${transactionId}`, {
+            method: 'DELETE',
+        });
+
+        if (response.ok) {
+            alert('ลบรายการสำเร็จ!');
+            fetchTransactions(); // ดึงข้อมูลใหม่
+        } else {
+            alert('ลบรายการไม่สำเร็จ! โปรดลองใหม่อีกครั้ง');
+        }
+    }
+
+    // โหลดข้อมูลทันทีเมื่อหน้าเว็บเปิด
+    fetchTransactions();
+</script>
+
+</body>
+</html>
