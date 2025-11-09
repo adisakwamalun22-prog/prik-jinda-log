@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌶️ Log รายรับ-รายจ่าย โครงการพริกจินดา</title>
+    <title>🌶️ บันทึกรายรับ - รายจ่าย</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -79,26 +79,33 @@
             padding: 5px 10px;
             font-size: 12px;
         }
+        #addCategorySection {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px dashed #022344;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🌶️ บันทึกรายรับ-รายจ่าย โครงการปลูกพริกจินดา</h1>
+    <h1>🌶️ บันทึกรายรับ-รายจ่าย </h1>
     <hr>
 
     <h2>📝 เพิ่มรายการใหม่</h2>
     <form id="transactionForm">
         <div class="form-group">
             <label for="type">ประเภท:</label>
-            <select id="type" required>
+            <select id="type" required onchange="filterCategories()">
                 <option value="Expense">รายจ่าย</option>
                 <option value="Income">รายรับ</option>
             </select>
         </div>
         <div class="form-group">
-            <label for="category">หมวดหมู่:</label>
-            <input type="text" id="category" placeholder="เช่น ค่าปุ๋ย, ค่าแรง, ยอดขายพริก" required>
+            <label for="category_id">หมวดหมู่:</label>
+            <select id="category_id" required>
+                </select>
         </div>
         <div class="form-group">
             <label for="amount">จำนวนเงิน:</label>
@@ -110,6 +117,16 @@
         </div>
         <button type="submit">บันทึกรายการ</button>
     </form>
+    
+    <div id="addCategorySection">
+        <h3>+ จัดการ/เพิ่มหมวดหมู่ใหม่</h3>
+        <input type="text" id="new_category_name" placeholder="ชื่อหมวดหมู่ใหม่">
+        <select id="new_category_type" style="width: 30%;">
+            <option value="Expense">รายจ่าย</option>
+            <option value="Income">รายรับ</option>
+        </select>
+        <button onclick="addNewCategory(event)" style="width: 30%; margin-top: 5px;">เพิ่มหมวดหมู่</button>
+    </div>
 
     <hr>
 
@@ -146,16 +163,82 @@
     const totalIncomeEl = document.getElementById('totalIncome');
     const totalExpenseEl = document.getElementById('totalExpense');
     const netProfitEl = document.getElementById('netProfit');
+    const categorySelect = document.getElementById('category_id');
+    const typeSelect = document.getElementById('type');
+    
+    let allCategories = []; // เก็บ Master Data
 
-    // ฟังก์ชันดึงข้อมูลและอัปเดต UI
+    // ------------------------------------------------------------------
+    // 🟢 จัดการ Master Data
+    // ------------------------------------------------------------------
+    async function fetchCategories() {
+        try {
+            const response = await fetch('/api/categories');
+            allCategories = await response.json();
+            filterCategories();
+        } catch(error) {
+            console.error('Error fetching categories:', error);
+        }
+    }
+
+    function filterCategories() {
+        const selectedType = typeSelect.value;
+        const filtered = allCategories.filter(cat => cat.type === selectedType);
+        
+        categorySelect.innerHTML = '';
+        if (filtered.length === 0) {
+            const opt = document.createElement('option');
+            opt.textContent = '--- ไม่มีหมวดหมู่ ---';
+            opt.value = '';
+            opt.disabled = true;
+            categorySelect.appendChild(opt);
+            return;
+        }
+
+        filtered.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat.id;
+            opt.textContent = cat.name;
+            categorySelect.appendChild(opt);
+        });
+    }
+
+    async function addNewCategory(e) {
+        e.preventDefault();
+        const name = document.getElementById('new_category_name').value.trim();
+        const type = document.getElementById('new_category_type').value;
+
+        if (!name) {
+            alert('โปรดระบุชื่อหมวดหมู่');
+            return;
+        }
+
+        const response = await fetch('/api/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, type: type }),
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert('เพิ่มหมวดหมู่สำเร็จ!');
+            document.getElementById('new_category_name').value = '';
+            fetchCategories(); // โหลด Master Data ใหม่
+        } else {
+            alert('เพิ่มหมวดหมู่ไม่สำเร็จ: ' + result.message);
+        }
+    }
+
+
+    // ------------------------------------------------------------------
+    // 🟢 จัดการ Transactions
+    // ------------------------------------------------------------------
     async function fetchTransactions() {
         const response = await fetch('/api/transactions');
         const transactions = await response.json();
         
-        // 1. อัปเดตตาราง
         renderTable(transactions);
-        
-        // 2. อัปเดตสรุปผล
         renderSummary(transactions);
     }
 
@@ -169,14 +252,13 @@
             row.innerHTML = `
                 <td>${date}</td>
                 <td class="${typeClass}">${t.type === 'Income' ? 'รายรับ' : 'รายจ่าย'}</td>
-                <td>${t.category}</td>
+                <td>${t.category_name}</td>
                 <td class="${typeClass}">${parseFloat(t.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
                 <td>${t.description || '-'}</td>
                 <td><button class="delete-btn" data-id="${t.id}">ลบ</button></td>
             `;
         });
 
-        // กำหนด Event Listener สำหรับปุ่มลบทุกปุ่ม
         document.querySelectorAll('.delete-btn').forEach(button => {
             button.addEventListener('click', handleDelete);
         });
@@ -200,39 +282,37 @@
         totalExpenseEl.textContent = totalExpense.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + ' บาท';
         netProfitEl.textContent = netProfit.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + ' บาท';
         
-        // เปลี่ยนสีตัวอักษรกำไรสุทธิ
         netProfitEl.style.color = netProfit >= 0 ? '#2e7d32' : '#d32f2f'; 
     }
 
-    // ฟังก์ชันจัดการการบันทึกรายการใหม่
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
         const data = {
-            type: document.getElementById('type').value,
-            category: document.getElementById('category').value.trim(),
+            type: typeSelect.value,
+            category_id: document.getElementById('category_id').value, // 🟢 ส่ง ID แทนชื่อ
             amount: parseFloat(document.getElementById('amount').value),
             description: document.getElementById('description').value.trim()
         };
 
         const response = await fetch('/api/transactions', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         });
 
+        const result = await response.json();
+
         if (response.ok) {
             alert('บันทึกสำเร็จ!');
-            form.reset(); // ล้างฟอร์ม
-            fetchTransactions(); // ดึงข้อมูลใหม่
+            form.reset(); 
+            fetchTransactions(); 
+            fetchCategories(); // เพื่อรีเซ็ตค่าใน dropdown
         } else {
-            alert('บันทึกไม่สำเร็จ! โปรดลองใหม่อีกครั้ง');
+            alert('บันทึกไม่สำเร็จ! ' + result.message);
         }
     });
 
-    // ฟังก์ชันจัดการการลบรายการ
     async function handleDelete(e) {
         const transactionId = e.target.dataset.id;
         if (!confirm(`คุณแน่ใจหรือไม่ที่จะลบรายการ ID: ${transactionId} ?`)) {
@@ -245,13 +325,14 @@
 
         if (response.ok) {
             alert('ลบรายการสำเร็จ!');
-            fetchTransactions(); // ดึงข้อมูลใหม่
+            fetchTransactions(); 
         } else {
             alert('ลบรายการไม่สำเร็จ! โปรดลองใหม่อีกครั้ง');
         }
     }
 
-    // โหลดข้อมูลทันทีเมื่อหน้าเว็บเปิด
+    // โหลดข้อมูลทั้งหมดเมื่อหน้าเว็บเปิด
+    fetchCategories();
     fetchTransactions();
 </script>
 

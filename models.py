@@ -5,34 +5,47 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
-class Transaction(db.Model):
-    """
-    ตารางสำหรับบันทึกรายการรายรับ-รายจ่ายของโครงการปลูกพริก
-    """
+# ------------------------------------------------------------------
+# ตารางใหม่: Categories (Master Data)
+# ------------------------------------------------------------------
+class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80), unique=True, nullable=False) # ชื่อหมวดหมู่ (ต้องไม่ซ้ำ)
+    type = db.Column(db.String(10), nullable=False) # 'Income' หรือ 'Expense'
     
-    # วันที่และเวลา
-    date_recorded = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    
-    # ประเภทการทำรายการ: 'Income' (รายรับ) หรือ 'Expense' (รายจ่าย)
-    type = db.Column(db.String(10), nullable=False) 
-    
-    # หมวดหมู่ (ใช้สำหรับวิเคราะห์)
-    category = db.Column(db.String(50), nullable=False)
-    
-    # จำนวนเงิน
-    amount = db.Column(db.Float, nullable=False)
-    
-    # คำอธิบาย
-    description = db.Column(db.String(200), nullable=True)
+    # กำหนดความสัมพันธ์ (Relationship) เพื่อดึงรายการ Transactions ที่อ้างอิงหมวดหมู่นี้
+    transactions = db.relationship('Transaction', backref='category_ref', lazy=True)
 
     def to_dict(self):
-        """แปลง Object เป็น Dictionary เพื่อส่งกลับไปที่ Frontend ในรูปแบบ JSON"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'type': self.type
+        }
+    
+    def __repr__(self):
+        return f"Category('{self.name}', '{self.type}')"
+
+# ------------------------------------------------------------------
+# ตาราง Transaction (ปรับปรุง)
+# ------------------------------------------------------------------
+class Transaction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date_recorded = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    type = db.Column(db.String(10), nullable=False) 
+    amount = db.Column(db.Float, nullable=False)
+    description = db.Column(db.String(200), nullable=True)
+
+    # 🟢 ใช้ Foreign Key อ้างอิงตาราง Category
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False) 
+    
+    def to_dict(self):
         return {
             'id': self.id,
             'date_recorded': self.date_recorded.isoformat(),
             'type': self.type,
-            'category': self.category,
+            'category_id': self.category_id,
+            'category_name': self.category_ref.name, # ดึงชื่อหมวดหมู่ผ่าน relationship
             'amount': self.amount,
             'description': self.description
         }
