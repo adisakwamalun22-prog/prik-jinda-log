@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-# 1. ตั้งค่า FLASK_APP
+# 1. ตั้งค่า FLASK_APP (สำคัญมากสำหรับ Flask ใน Production)
 export FLASK_APP=app.py
 
-# 2. รัน Gunicorn โดยใช้ Python Interpreter ที่ Render สร้างไว้โดยตรง
-# $VIRTUAL_ENV คือตัวแปรที่ชี้ไปที่โฟลเดอร์ venv
-exec $VIRTUAL_ENV/bin/gunicorn app:app
+# 2. รัน Gunicorn เป็น Python Module และกำหนด Host/Port ตามที่ Render กำหนด
+exec python -m gunicorn app:app -b 0.0.0.0:$PORT
