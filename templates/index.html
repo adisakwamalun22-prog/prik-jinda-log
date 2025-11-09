@@ -3,130 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌶️ Multi-Project Log</title>
+    <title>🌶️ Prik Jinda Log (v3.0)</title>
     <style>
         :root {
             --primary-color: #022344;
             --accent-color: #f44336; 
             --success-color: #2e7d32;
             --error-color: #d32f2f;
+            --warn-color: #ffc107;
             --bg-light: #f4f7f9;
+            --border-color: #ddd;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            background-color: var(--bg-light);
-            color: #333;
-            line-height: 1.6;
-        }
-        .container {
-            width: 95%;
-            max-width: 1000px;
-            margin: 20px auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: var(--primary-color);
-            text-align: center;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid var(--primary-color);
-        }
-        h2 {
-            color: var(--primary-color);
-            border-left: 5px solid var(--primary-color);
-            padding-left: 10px;
-            margin-top: 30px;
-        }
-        button {
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; margin: 0; background-color: var(--bg-light); color: #333; line-height: 1.6; }
+        .container { width: 95%; max-width: 1100px; margin: 20px auto; }
+        
+        /* ---------------------------------- */
+        /* --- Utilities & Buttons --- */
+        /* ---------------------------------- */
+        h1 { color: var(--primary-color); text-align: center; margin-bottom: 20px; }
+        h2 { color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 8px; margin-top: 30px; }
+        button, .button {
             background-color: var(--primary-color);
             color: white;
-            padding: 12px 15px;
+            padding: 10px 15px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            width: 100%;
-            font-size: 1em;
-            transition: background-color 0.3s;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: background-color 0.3s, transform 0.1s;
         }
-        button:hover {
-            background-color: #003366;
-        }
-        .input-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
+        button:hover, .button:hover { background-color: #003366; }
+        button:active, .button:active { transform: scale(0.98); }
+        
+        .btn-delete { background-color: var(--error-color); }
+        .btn-delete:hover { background-color: #b71c1c; }
+        .btn-edit { background-color: var(--warn-color); color: #333; }
+        .btn-edit:hover { background-color: #ffa000; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
         input[type="number"], input[type="text"], select {
             width: 100%;
             padding: 10px;
             box-sizing: border-box;
-            border: 1px solid #ccc;
+            border: 1px solid var(--border-color);
             border-radius: 6px;
             font-size: 1em;
         }
-        .summary {
-            background-color: #e0f7fa;
-            padding: 20px;
-            margin-top: 30px;
-            border-radius: 8px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-around;
-            text-align: center;
-            gap: 15px;
-        }
-        .income { color: var(--success-color); font-weight: bold; }
-        .expense { color: var(--error-color); font-weight: bold; }
-        .profit { color: var(--primary-color); font-weight: bold; font-size: 1.4em; }
+        .input-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
         
-        /* --- Project List Specifics --- */
-        #projectList {
-            list-style: none;
-            padding: 0;
-        }
-        .project-item {
+        /* ---------------------------------- */
+        /* --- Card & List Styling --- */
+        /* ---------------------------------- */
+        .card { background: #fff; border-radius: 12px; box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px; }
+        .list-item {
             padding: 15px;
             margin-bottom: 10px;
-            background: var(--bg-light);
+            background: #fff;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
             transition: background-color 0.3s;
         }
-        .project-item:hover {
-            background-color: #e9e9e9;
+        .list-item:hover { background-color: #f9f9f9; }
+        .list-item-content { flex-grow: 1; cursor: pointer; }
+        .list-item-actions { display: flex; gap: 8px; }
+        .list-item-actions button { width: auto; padding: 5px 10px; font-size: 0.85em; }
+
+        /* ---------------------------------- */
+        /* --- Collapsible <details> --- */
+        /* ---------------------------------- */
+        details {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
         }
-        .project-name {
-            font-size: 1.2em;
-            font-weight: bold;
+        details summary {
+            padding: 15px 20px;
+            font-size: 1.1em;
+            font-weight: 600;
             color: var(--primary-color);
+            cursor: pointer;
+            list-style-position: inside;
         }
-        
-        /* --- Transaction Table --- */
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
-        th, td { border: 1px solid #ddd; padding: 10px 8px; text-align: left; }
+        details[open] summary { border-bottom: 1px solid var(--border-color); }
+        .details-content { padding: 20px; }
+
+        /* ---------------------------------- */
+        /* --- Table Styling --- */
+        /* ---------------------------------- */
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px 10px; text-align: left; }
         th { background-color: var(--primary-color); color: white; }
-        
+        td .btn-edit, td .btn-delete { width: auto; padding: 5px 10px; font-size: 0.9em; margin-right: 5px; }
+        .income { color: var(--success-color); font-weight: 500; }
+        .expense { color: var(--error-color); font-weight: 500; }
+        .summary { background-color: #e0f7fa; padding: 20px; display: flex; flex-wrap: wrap; justify-content: space-around; text-align: center; gap: 15px; }
+        .profit { color: var(--primary-color); font-weight: bold; font-size: 1.4em; }
+        .profit.negative { color: var(--error-color); }
+
+        /* ---------------------------------- */
+        /* --- Modal Styling --- */
+        /* ---------------------------------- */
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto; padding: 25px; border-radius: 12px;
+            width: 90%; max-width: 600px; position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .close-btn {
+            color: #aaa; position: absolute; top: 15px; right: 25px;
+            font-size: 28px; font-weight: bold; cursor: pointer;
+        }
+        .close-btn:hover { color: #000; }
+
+        /* ---------------------------------- */
+        /* --- Audit Log Styling --- */
+        /* ---------------------------------- */
+        #auditLogList { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; border: 1px solid #eee; }
+        .log-item { padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 0.85em; }
+        .log-item strong { color: var(--primary-color); }
+        .log-item .action-UPDATE { color: #ff9800; }
+        .log-item .action-CREATE { color: var(--success-color); }
+        .log-item .action-DELETE { color: var(--error-color); }
+
+        /* ---------------------------------- */
         /* --- Mobile Optimization --- */
+        /* ---------------------------------- */
         @media (max-width: 768px) {
             .input-row { grid-template-columns: 1fr; }
             .summary { flex-direction: column; }
-            .summary > div { flex-basis: 100%; }
-            .category-input-row { flex-direction: column; }
-            .category-input-row button, .category-input-row select { width: 100%; }
+            .list-item { flex-direction: column; align-items: flex-start; }
+            .list-item-content { margin-bottom: 10px; }
+            .modal-content { width: 95%; margin: 20% auto; }
             
             /* Responsive Table (Simplified) */
+            .table-wrapper { border: none; box-shadow: none; }
             table, thead, tbody, th, td, tr { display: block; }
             thead tr { position: absolute; top: -9999px; left: -9999px; }
-            td { border: none; border-bottom: 1px solid #eee; position: relative; padding-left: 40%; text-align: right; }
+            tr { border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px; }
+            td { border: none; border-bottom: 1px solid #eee; position: relative; padding-left: 40%; text-align: right; min-height: 30px; }
             td:before { position: absolute; top: 6px; left: 6px; width: 35%; padding-right: 10px; white-space: nowrap; content: attr(data-label); font-weight: bold; text-align: left; color: var(--primary-color); }
+            td[data-label="จัดการ"] { text-align: center; padding-left: 0; }
         }
     </style>
 </head>
@@ -134,116 +164,212 @@
 
 <div class="container">
     <header>
-        <h1 id="mainTitle">🌶️ จัดการบัญชีโครงการ</h1>
-        <button id="backButton" style="width: auto; padding: 5px 15px; margin-bottom: 15px; display: none;" onclick="showProjectList()">← กลับไปรายการโครงการ</button>
-        <p id="currentProjectName" style="font-size: 1.3em; font-weight: bold; color: var(--accent-color); text-align: center;"></p>
+        <h1 id="mainTitle">🌶️ Project Financial Log</h1>
+        <button id="backButton" style="width: auto; padding: 8px 15px; margin-bottom: 15px; display: none;" onclick="showProjectList()">← กลับไปรายการโครงการ</button>
+        <h2 id="currentProjectName" style="text-align: center; color: var(--accent-color); border: none; padding: 0; margin: 0;"></h2>
     </header>
-    <hr>
 
     <div id="projectListView">
-        <h2>📂 โครงการทั้งหมด</h2>
-        <ul id="projectList">
-            </ul>
+        <details class="card" open>
+            <summary>+ เพิ่มโครงการใหม่</summary>
+            <div class="details-content">
+                <form id="newProjectForm">
+                    <div class="form-group">
+                        <label for="new_project_name">ชื่อโครงการ (เช่น: ปลูกพริกปี 2026)</label>
+                        <input type="text" id="new_project_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_project_description">คำอธิบาย (Optional)</label>
+                        <input type="text" id="new_project_description">
+                    </div>
+                    <button type="submit">สร้างโครงการ</button>
+                </form>
+            </div>
+        </details>
         
-        <div id="addProjectSection" style="margin-top: 30px;">
-            <h2>+ เพิ่มโครงการใหม่</h2>
-            <form id="newProjectForm">
-                <div class="form-group">
-                    <input type="text" id="new_project_name" placeholder="ชื่อโครงการ (เช่น: ปลูกพริกปี 2026)" required>
-                </div>
-                <div class="form-group">
-                    <input type="text" id="new_project_description" placeholder="คำอธิบาย (Optional)">
-                </div>
-                <button type="submit">สร้างโครงการ</button>
-            </form>
-        </div>
+        <h2>📂 โครงการทั้งหมด</h2>
+        <div id="projectListContainer">
+            </div>
     </div>
 
 
     <div id="transactionView" style="display: none;">
         
-        <h2>📝 เพิ่มรายการใหม่</h2>
-        <form id="transactionForm">
+        <details class="card">
+            <summary>+ เพิ่มรายการใหม่</summary>
+            <div class="details-content">
+                <form id="transactionForm">
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label for="type">ประเภท:</label>
+                            <select id="type" required onchange="filterCategories('category_id', this.value)">
+                                <option value="Expense">รายจ่าย</option>
+                                <option value="Income">รายรับ</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="category_id">หมวดหมู่:</label>
+                            <select id="category_id" required>
+                                </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="amount">จำนวนเงิน:</label>
+                            <input type="number" id="amount" step="0.01" min="0.01" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">คำอธิบาย (optional):</label>
+                        <input type="text" id="description" maxlength="200">
+                    </div>
+                    <button type="submit">บันทึกรายการ</button>
+                </form>
+            </div>
+        </details>
+
+        <details class="card">
+            <summary>📊 สรุปผล</summary>
+            <div class="details-content summary">
+                <div>รายรับรวม: <span id="totalIncome" class="income">0.00 บาท</span></div>
+                <div>รายจ่ายรวม: <span id="totalExpense" class="expense">0.00 บาท</span></div>
+                <div>**กำไรสุทธิ:** <span id="netProfit" class="profit">0.00 บาท</span></div>
+            </div>
+        </details>
+
+        <div class="card">
+            <h2>รายการธุรกรรม</h2>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>วันที่</th>
+                            <th>ประเภท</th>
+                            <th>หมวดหมู่</th>
+                            <th>จำนวนเงิน</th>
+                            <th>คำอธิบาย</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <details class="card">
+            <summary>🗂️ จัดการหมวดหมู่</summary>
+            <div class="details-content">
+                <h3>เพิ่มหมวดหมู่ใหม่</h3>
+                <form id="newCategoryForm" class="input-row">
+                    <input type="text" id="new_category_name" placeholder="ชื่อหมวดหมู่ใหม่" required style="flex-grow: 2;">
+                    <select id="new_category_type">
+                        <option value="Expense">รายจ่าย</option>
+                        <option value="Income">รายรับ</option>
+                    </select>
+                    <button type="submit" style="width: auto;">เพิ่ม</button>
+                </form>
+                <hr>
+                <h3>หมวดหมู่ที่มีอยู่</h3>
+                <div id="categoryListContainer">
+                    </div>
+            </div>
+        </details>
+
+        <details class="card">
+            <summary>📜 ประวัติการดำเนินการ (Log)</summary>
+            <div class="details-content">
+                <ul id="auditLogList">
+                    </ul>
+            </div>
+        </details>
+    </div>
+
+</div>
+
+<div id="projectEditModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" data-modal="projectEditModal">&times;</span>
+        <h2>แก้ไขโครงการ</h2>
+        <form id="projectEditForm">
+            <input type="hidden" id="edit_project_id">
+            <div class="form-group">
+                <label for="edit_project_name">ชื่อโครงการ</label>
+                <input type="text" id="edit_project_name" required>
+            </div>
+            <div class="form-group">
+                <label for="edit_project_description">คำอธิบาย</label>
+                <input type="text" id="edit_project_description">
+            </div>
+            <button type="submit">บันทึกการแก้ไข</button>
+        </form>
+    </div>
+</div>
+
+<div id="categoryEditModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" data-modal="categoryEditModal">&times;</span>
+        <h2>แก้ไขหมวดหมู่</h2>
+        <form id="categoryEditForm">
+            <input type="hidden" id="edit_category_id_modal">
+            <div class="form-group">
+                <label for="edit_category_name">ชื่อหมวดหมู่</label>
+                <input type="text" id="edit_category_name" required>
+            </div>
+            <div class="form-group">
+                <label>ประเภท</label>
+                <input type="text" id="edit_category_type" disabled style="background:#eee;">
+            </div>
+            <button type="submit">บันทึกการแก้ไข</button>
+        </form>
+    </div>
+</div>
+
+<div id="txEditModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" data-modal="txEditModal">&times;</span>
+        <h2>แก้ไขรายการ</h2>
+        <form id="txEditForm">
+            <input type="hidden" id="edit_tx_id">
             <div class="input-row">
                 <div class="form-group">
-                    <label for="type">ประเภท:</label>
-                    <select id="type" required onchange="filterCategories()">
+                    <label for="edit_tx_type">ประเภท:</label>
+                    <select id="edit_tx_type" required onchange="filterCategories('edit_tx_category_id', this.value)">
                         <option value="Expense">รายจ่าย</option>
                         <option value="Income">รายรับ</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="category_id">หมวดหมู่:</label>
-                    <select id="category_id" required>
-                        </select>
+                    <label for="edit_tx_category_id">หมวดหมู่:</label>
+                    <select id="edit_tx_category_id" required></select>
                 </div>
                 <div class="form-group">
-                    <label for="amount">จำนวนเงิน:</label>
-                    <input type="number" id="amount" step="0.01" min="0.01" required>
+                    <label for="edit_tx_amount">จำนวนเงิน:</label>
+                    <input type="number" id="edit_tx_amount" step="0.01" min="0.01" required>
                 </div>
             </div>
             <div class="form-group">
-                <label for="description">คำอธิบาย (optional):</label>
-                <input type="text" id="description" maxlength="200">
+                <label for="edit_tx_description">คำอธิบาย:</label>
+                <input type="text" id="edit_tx_description" maxlength="200">
             </div>
-            <button type="submit">บันทึกรายการ</button>
+            <button type="submit">บันทึกการแก้ไข</button>
         </form>
-
-        <div id="addCategorySection" style="margin-top: 20px;">
-            <h3>+ จัดการ/เพิ่มหมวดหมู่ใหม่</h3>
-            <div class="category-input-row">
-                <input type="text" id="new_category_name" placeholder="ชื่อหมวดหมู่ใหม่" style="flex-grow: 2;">
-                <select id="new_category_type">
-                    <option value="Expense">รายจ่าย</option>
-                    <option value="Income">รายรับ</option>
-                </select>
-                <button onclick="addNewCategory(event)">เพิ่ม</button>
-            </div>
-        </div>
-
-        <hr>
-
-        <h2>📊 สรุปผล</h2>
-        <div class="summary">
-            <div>รายรับรวม: <span id="totalIncome" class="income">0.00 บาท</span></div>
-            <div>รายจ่ายรวม: <span id="totalExpense" class="expense">0.00 บาท</span></div>
-            <div>**กำไรสุทธิ:** <span id="netProfit" class="profit">0.00 บาท</span></div>
-        </div>
-
-        <hr>
-
-        <h2>รายการทั้งหมด</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>วันที่</th>
-                    <th>ประเภท</th>
-                    <th>หมวดหมู่</th>
-                    <th>จำนวนเงิน</th>
-                    <th>คำอธิบาย</th>
-                    <th>ลบ</th>
-                </tr>
-            </thead>
-            <tbody id="transactionTableBody">
-                </tbody>
-        </table>
     </div>
-
 </div>
 
+
 <script>
+    // Global State
+    let currentProjectId = null;
+    let allCategories = [];
+    let allTransactions = [];
+
+    // DOM Views
     const projectListView = document.getElementById('projectListView');
     const transactionView = document.getElementById('transactionView');
     const backButton = document.getElementById('backButton');
     const mainTitle = document.getElementById('mainTitle');
     const currentProjectName = document.getElementById('currentProjectName');
-    
-    // Global State
-    let currentProjectId = null;
-    let allCategories = [];
-    
-    // DOM Elements for Transaction View (ใช้โค้ดเดิม)
-    const projectListEl = document.getElementById('projectList');
+
+    // DOM Elements
+    const projectListContainer = document.getElementById('projectListContainer');
     const newProjectForm = document.getElementById('newProjectForm');
     const transactionForm = document.getElementById('transactionForm');
     const tableBody = document.getElementById('transactionTableBody');
@@ -252,15 +378,38 @@
     const netProfitEl = document.getElementById('netProfit');
     const categorySelect = document.getElementById('category_id');
     const typeSelect = document.getElementById('type');
+    const auditLogList = document.getElementById('auditLogList');
+    const newCategoryForm = document.getElementById('newCategoryForm');
+    const categoryListContainer = document.getElementById('categoryListContainer');
 
+    // Modals
+    const projectEditModal = document.getElementById('projectEditModal');
+    const categoryEditModal = document.getElementById('categoryEditModal');
+    const txEditModal = document.getElementById('txEditModal');
 
-    // ------------------------------------------------------------------
-    // 🟢 NAVIGATION AND VIEW MANAGEMENT
-    // ------------------------------------------------------------------
+    // API Helper
+    async function apiRequest(url, options = {}) {
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error ${response.status}`);
+            }
+            if (response.status === 204) return null; // No Content
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            alert(`เกิดข้อผิดพลาด: ${error.message}`);
+            return null;
+        }
+    }
 
+    // ----------------------------------
+    // --- VIEW MANAGEMENT
+    // ----------------------------------
     function showProjectList() {
         currentProjectId = null;
-        mainTitle.textContent = '🌶️ จัดการบัญชีโครงการ';
+        mainTitle.textContent = '🌶️ Project Financial Log';
         currentProjectName.textContent = '';
         backButton.style.display = 'none';
         projectListView.style.display = 'block';
@@ -268,7 +417,7 @@
         fetchProjects();
     }
 
-    function showTransactionView(projectId, projectName) {
+    async function showTransactionView(projectId, projectName) {
         currentProjectId = projectId;
         mainTitle.textContent = 'บันทึกรายรับ-รายจ่าย';
         currentProjectName.textContent = `โครงการ: ${projectName}`;
@@ -276,32 +425,37 @@
         projectListView.style.display = 'none';
         transactionView.style.display = 'block';
         
-        // Load data for the selected project
-        fetchCategories(); 
-        fetchTransactions();
+        // Load data
+        await fetchCategories();
+        await fetchTransactions();
+        await fetchLogs();
     }
 
-    // ------------------------------------------------------------------
-    // 🟢 API: PROJECTS
-    // ------------------------------------------------------------------
-
+    // ----------------------------------
+    // --- PROJECTS (CRUD)
+    // ----------------------------------
     async function fetchProjects() {
-        projectListEl.innerHTML = '<li>กำลังโหลดโครงการ...</li>';
-        const response = await fetch('/api/projects');
-        const projects = await response.json();
-        
-        projectListEl.innerHTML = '';
-        if (projects.length === 0) {
-             projectListEl.innerHTML = '<li>ยังไม่มีโครงการ! โปรดสร้างโครงการใหม่ด้านล่าง.</li>';
-             return;
+        projectListContainer.innerHTML = '<p>กำลังโหลดโครงการ...</p>';
+        const projects = await apiRequest('/api/projects');
+        projectListContainer.innerHTML = '';
+        if (!projects || projects.length === 0) {
+            projectListContainer.innerHTML = '<p>ยังไม่มีโครงการ! โปรดสร้างโครงการใหม่</p>';
+            return;
         }
-
         projects.forEach(p => {
-            const li = document.createElement('li');
-            li.className = 'project-item';
-            li.innerHTML = `<span class="project-name">${p.name}</span><span>${p.description}</span>`;
-            li.onclick = () => showTransactionView(p.id, p.name);
-            projectListEl.appendChild(li);
+            const item = document.createElement('div');
+            item.className = 'list-item';
+            item.innerHTML = `
+                <div class="list-item-content" onclick="showTransactionView(${p.id}, '${p.name}')">
+                    <span class="project-name">${p.name}</span>
+                    <br><small>${p.description}</small>
+                </div>
+                <div class="list-item-actions">
+                    <button class="btn-edit" onclick="showProjectEditModal(${p.id}, '${p.name}', '${p.description}')">แก้ไข</button>
+                    <button class="btn-delete" onclick="handleDeleteProject(${p.id}, '${p.name}')">ลบ</button>
+                </div>
+            `;
+            projectListContainer.appendChild(item);
         });
     }
 
@@ -309,190 +463,327 @@
         e.preventDefault();
         const name = document.getElementById('new_project_name').value.trim();
         const description = document.getElementById('new_project_description').value.trim();
+        if (!name) return;
 
-        if (!name) { alert('โปรดระบุชื่อโครงการ'); return; }
-
-        const response = await fetch('/api/projects', {
+        const result = await apiRequest('/api/projects', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name, description: description }),
+            body: JSON.stringify({ name, description }),
         });
-
-        const result = await response.json();
-        
-        if (response.ok) {
-            alert(`โครงการ "${name}" ถูกสร้างสำเร็จ และเพิ่ม Master Data เริ่มต้นแล้ว!`);
+        if (result) {
+            alert(`โครงการ "${name}" ถูกสร้างสำเร็จ!`);
             newProjectForm.reset();
             fetchProjects();
-        } else {
-            alert('สร้างโครงการไม่สำเร็จ: ' + result.message);
         }
     });
 
-    // ------------------------------------------------------------------
-    // 🟢 API & LOGIC: CATEGORIES (ต้องใช้ project_id)
-    // ------------------------------------------------------------------
-    
+    function showProjectEditModal(id, name, description) {
+        document.getElementById('edit_project_id').value = id;
+        document.getElementById('edit_project_name').value = name;
+        document.getElementById('edit_project_description').value = description;
+        projectEditModal.style.display = 'block';
+    }
+
+    document.getElementById('projectEditForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('edit_project_id').value;
+        const name = document.getElementById('edit_project_name').value.trim();
+        const description = document.getElementById('edit_project_description').value.trim();
+        
+        const result = await apiRequest(`/api/projects/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, description }),
+        });
+        if (result) {
+            closeModal(projectEditModal);
+            fetchProjects();
+        }
+    });
+
+    async function handleDeleteProject(id, name) {
+        if (!confirm(`คุณแน่ใจหรือไม่ที่จะลบโครงการ "${name}"?\n\nคำเตือน: ธุรกรรม หมวดหมู่ และ Log ทั้งหมดของโครงการนี้จะถูกลบอย่างถาวร!`)) return;
+        
+        const result = await apiRequest(`/api/projects/${id}`, { method: 'DELETE' });
+        if (result !== null) { // DELETE returns 200 OK with message
+            alert(result.message);
+            fetchProjects();
+        }
+    }
+
+    // ----------------------------------
+    // --- CATEGORIES (CRUD)
+    // ----------------------------------
     async function fetchCategories() {
         if (!currentProjectId) return;
-        const response = await fetch(`/api/projects/${currentProjectId}/categories`);
-        allCategories = await response.json();
-        filterCategories();
+        allCategories = await apiRequest(`/api/projects/${currentProjectId}/categories`);
+        
+        // กรอง Dropdown ในฟอร์มหลัก
+        filterCategories('category_id', typeSelect.value);
+        
+        // 🟢 แสดงผลใน "จัดการหมวดหมู่"
+        renderCategoryList();
     }
 
-    function filterCategories() {
-        // (ใช้ Logic เดิม)
-        const selectedType = typeSelect.value;
-        const filtered = allCategories.filter(cat => cat.type === selectedType);
-        
-        categorySelect.innerHTML = '';
-        // ... (Logic การสร้าง Option) ...
-        if (filtered.length === 0) {
-            const opt = document.createElement('option');
-            opt.textContent = '--- ไม่มีหมวดหมู่ ---';
-            opt.value = '';
-            opt.disabled = true;
-            categorySelect.appendChild(opt);
+    function renderCategoryList() {
+        categoryListContainer.innerHTML = '';
+        if (!allCategories || allCategories.length === 0) {
+            categoryListContainer.innerHTML = '<p>ยังไม่มีหมวดหมู่สำหรับโครงการนี้</p>';
             return;
         }
-
-        filtered.forEach(cat => {
-            const opt = document.createElement('option');
-            opt.value = cat.id;
-            opt.textContent = cat.name;
-            categorySelect.appendChild(opt);
+        allCategories.forEach(cat => {
+            const item = document.createElement('div');
+            item.className = 'list-item';
+            item.innerHTML = `
+                <div class="list-item-content">
+                    <span class="${cat.type.toLowerCase()}">${cat.name}</span>
+                    <small>(${cat.type})</small>
+                </div>
+                <div class="list-item-actions">
+                    <button class="btn-edit" onclick="showCategoryEditModal(${cat.id}, '${cat.name}', '${cat.type}')">แก้ไข</button>
+                    <button class="btn-delete" onclick="handleDeleteCategory(${cat.id}, '${cat.name}')">ลบ</button>
+                </div>
+            `;
+            categoryListContainer.appendChild(item);
         });
     }
 
-    async function addNewCategory(e) {
-        e.preventDefault();
-        if (!currentProjectId) return;
+    function filterCategories(dropdownId, selectedType) {
+        const dropdown = document.getElementById(dropdownId);
+        if (!dropdown) return;
         
+        const filtered = allCategories.filter(cat => cat.type === selectedType);
+        dropdown.innerHTML = '';
+        
+        if (filtered.length === 0) {
+            dropdown.innerHTML = '<option value="" disabled>--- ไม่มีหมวดหมู่ ---</option>';
+            return;
+        }
+        filtered.forEach(cat => {
+            dropdown.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+        });
+    }
+
+    newCategoryForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
         const name = document.getElementById('new_category_name').value.trim();
         const type = document.getElementById('new_category_type').value;
-
-        if (!name) { alert('โปรดระบุชื่อหมวดหมู่'); return; }
-
-        const response = await fetch(`/api/projects/${currentProjectId}/categories`, { // 🟢 URL ใช้ project_id
+        
+        const result = await apiRequest(`/api/projects/${currentProjectId}/categories`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name, type: type }),
+            body: JSON.stringify({ name, type }),
         });
-
-        const result = await response.json();
-        
-        if (response.ok) {
-            alert('เพิ่มหมวดหมู่สำเร็จ!');
+        if (result) {
             document.getElementById('new_category_name').value = '';
-            fetchCategories(); 
-        } else {
-            alert('เพิ่มหมวดหมู่ไม่สำเร็จ: ' + result.message);
-        }
-    }
-
-
-    // ------------------------------------------------------------------
-    // 🟢 API & LOGIC: TRANSACTIONS (ต้องใช้ project_id)
-    // ------------------------------------------------------------------
-    
-    async function fetchTransactions() {
-        if (!currentProjectId) return;
-        const response = await fetch(`/api/projects/${currentProjectId}/transactions`); // 🟢 URL ใช้ project_id
-        const transactions = await response.json();
-        
-        renderTable(transactions);
-        renderSummary(transactions);
-    }
-
-    transactionForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!currentProjectId) return;
-        
-        const data = {
-            type: typeSelect.value,
-            category_id: document.getElementById('category_id').value,
-            amount: parseFloat(document.getElementById('amount').value),
-            description: document.getElementById('description').value.trim()
-        };
-
-        const response = await fetch(`/api/projects/${currentProjectId}/transactions`, { // 🟢 URL ใช้ project_id
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            alert('บันทึกสำเร็จ!');
-            transactionForm.reset(); 
-            fetchTransactions(); 
-        } else {
-            alert('บันทึกไม่สำเร็จ! ' + result.message);
+            fetchCategories(); // โหลดใหม่
+            fetchLogs(); // โหลด Log
         }
     });
 
-    // ... (renderTable, renderSummary, handleDelete function ใช้โค้ดเดิม)
+    function showCategoryEditModal(id, name, type) {
+        document.getElementById('edit_category_id_modal').value = id;
+        document.getElementById('edit_category_name').value = name;
+        document.getElementById('edit_category_type').value = type;
+        categoryEditModal.style.display = 'block';
+    }
+
+    document.getElementById('categoryEditForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('edit_category_id_modal').value;
+        const name = document.getElementById('edit_category_name').value.trim();
+        
+        const result = await apiRequest(`/api/categories/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name }),
+        });
+        if (result) {
+            closeModal(categoryEditModal);
+            fetchCategories();
+            fetchLogs();
+        }
+    });
+
+    async function handleDeleteCategory(id, name) {
+        if (!confirm(`คุณแน่ใจหรือไม่ที่จะลบหมวดหมู่ "${name}"?`)) return;
+        
+        const result = await apiRequest(`/api/categories/${id}`, { method: 'DELETE' });
+        if (result !== null) {
+            alert(result.message);
+            fetchCategories();
+            fetchLogs();
+        }
+    }
+
+    // ----------------------------------
+    // --- TRANSACTIONS (CRUD)
+    // ----------------------------------
+    async function fetchTransactions() {
+        if (!currentProjectId) return;
+        allTransactions = await apiRequest(`/api/projects/${currentProjectId}/transactions`);
+        renderTable(allTransactions || []);
+        renderSummary(allTransactions || []);
+    }
+
     function renderTable(transactions) {
         tableBody.innerHTML = '';
+        if (transactions.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">ยังไม่มีรายการ</td></tr>';
+            return;
+        }
         transactions.forEach(t => {
             const date = new Date(t.date_recorded).toLocaleDateString('th-TH');
-            const typeClass = t.type === 'Income' ? 'income' : 'expense';
-            const row = tableBody.insertRow();
+            const typeClass = t.type.toLowerCase();
             
+            const row = tableBody.insertRow();
             row.innerHTML = `
                 <td data-label="วันที่">${date}</td>
                 <td data-label="ประเภท" class="${typeClass}">${t.type === 'Income' ? 'รายรับ' : 'รายจ่าย'}</td>
                 <td data-label="หมวดหมู่">${t.category_name}</td>
                 <td data-label="จำนวนเงิน" class="${typeClass}">${parseFloat(t.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
                 <td data-label="คำอธิบาย">${t.description || '-'}</td>
-                <td data-label="ลบ"><button class="delete-btn" data-id="${t.id}">ลบ</button></td>
+                <td data-label="จัดการ">
+                    <button class="btn-edit" onclick="showTxEditModal(${t.id})">แก้ไข</button>
+                    <button class="btn-delete" onclick="handleDeleteTx(${t.id})">ลบ</button>
+                </td>
             `;
-        });
-
-        document.querySelectorAll('.delete-btn').forEach(button => {
-            button.addEventListener('click', handleDelete);
         });
     }
 
     function renderSummary(transactions) {
         let totalIncome = 0;
         let totalExpense = 0;
-
         transactions.forEach(t => {
             if (t.type === 'Income') { totalIncome += t.amount; } 
-            else if (t.type === 'Expense') { totalExpense += t.amount; }
+            else { totalExpense += t.amount; }
         });
-
         const netProfit = totalIncome - totalExpense;
 
         totalIncomeEl.textContent = totalIncome.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + ' บาท';
         totalExpenseEl.textContent = totalExpense.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + ' บาท';
         netProfitEl.textContent = netProfit.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + ' บาท';
-        
         netProfitEl.classList.toggle('negative', netProfit < 0);
     }
 
-    async function handleDelete(e) {
-        const transactionId = e.target.dataset.id;
-        if (!confirm(`คุณแน่ใจหรือไม่ที่จะลบรายการ ID: ${transactionId} ?`)) { return; }
-
-        const response = await fetch(`/api/transactions/${transactionId}`, {
-            method: 'DELETE',
+    // CREATE
+    transactionForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            type: typeSelect.value,
+            category_id: document.getElementById('category_id').value,
+            amount: parseFloat(document.getElementById('amount').value),
+            description: document.getElementById('description').value.trim()
+        };
+        
+        const result = await apiRequest(`/api/projects/${currentProjectId}/transactions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
         });
-
-        if (response.ok) {
-            alert('ลบรายการสำเร็จ!');
+        if (result) {
+            transactionForm.reset();
             fetchTransactions(); 
-        } else {
-            alert('ลบรายการไม่สำเร็จ! โปรดลองใหม่อีกครั้ง');
+            fetchLogs();
+        }
+    });
+
+    // UPDATE
+    function showTxEditModal(transactionId) {
+        const tx = allTransactions.find(t => t.id === transactionId);
+        if (!tx) return;
+
+        document.getElementById('edit_tx_id').value = tx.id;
+        document.getElementById('edit_tx_type').value = tx.type;
+        document.getElementById('edit_tx_amount').value = tx.amount;
+        document.getElementById('edit_tx_description').value = tx.description || '';
+        
+        filterCategories('edit_tx_category_id', tx.type);
+        document.getElementById('edit_tx_category_id').value = tx.category_id;
+        
+        txEditModal.style.display = 'block';
+    }
+
+    document.getElementById('txEditForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('edit_tx_id').value;
+        const data = {
+            type: document.getElementById('edit_tx_type').value,
+            category_id: document.getElementById('edit_tx_category_id').value,
+            amount: parseFloat(document.getElementById('edit_tx_amount').value),
+            description: document.getElementById('edit_tx_description').value.trim()
+        };
+
+        const result = await apiRequest(`/api/transactions/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (result) {
+            closeModal(txEditModal);
+            fetchTransactions(); 
+            fetchLogs();
+        }
+    });
+
+    // DELETE
+    async function handleDeleteTx(transactionId) {
+        if (!confirm(`คุณแน่ใจหรือไม่ที่จะลบรายการธุรกรรม ID: ${transactionId} ?`)) return;
+        
+        const result = await apiRequest(`/api/transactions/${transactionId}`, { method: 'DELETE' });
+        if (result !== null) {
+            alert(result.message);
+            fetchTransactions(); 
+            fetchLogs();
         }
     }
 
+    // ----------------------------------
+    // --- AUDIT LOG
+    // ----------------------------------
+    async function fetchLogs() {
+        if (!currentProjectId) return;
+        auditLogList.innerHTML = '<li class="log-item">Loading logs...</li>';
+        const logs = await apiRequest(`/api/projects/${currentProjectId}/logs`);
+        
+        auditLogList.innerHTML = '';
+        if (!logs || logs.length === 0) {
+            auditLogList.innerHTML = '<li class="log-item">ยังไม่มีประวัติการดำเนินการ</li>';
+            return;
+        }
+        logs.forEach(log => {
+            const date = new Date(log.timestamp).toLocaleString('th-TH');
+            const li = document.createElement('li');
+            li.className = 'log-item';
+            li.innerHTML = `
+                ${date} - <strong>${log.user_name}</strong> 
+                <span class="action-${log.action}">[${log.action}]</span>: 
+                ${log.details || `Record ID ${log.record_id}`}
+            `;
+            auditLogList.appendChild(li);
+        });
+    }
 
-    // ------------------------------------------------------------------
-    // 🟢 INITIALIZATION
-    // ------------------------------------------------------------------
+    // ----------------------------------
+    // --- MODAL HELPERS
+    // ----------------------------------
+    function closeModal(modal) {
+        if (modal) modal.style.display = 'none';
+    }
+    // ปิด Modal เมื่อคลิกปุ่ม (x)
+    document.querySelectorAll('.close-btn').forEach(btn => {
+        btn.onclick = () => closeModal(document.getElementById(btn.dataset.modal));
+    });
+    // ปิด Modal เมื่อคลิกนอกกรอบ
+    window.onclick = (event) => {
+        if (event.target.classList.contains('modal')) {
+            closeModal(event.target);
+        }
+    };
+
+    // ----------------------------------
+    // --- INITIALIZATION
+    // ----------------------------------
     showProjectList(); // เริ่มต้นด้วยการแสดงรายการโครงการ
 </script>
 

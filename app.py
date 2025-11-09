@@ -1,7 +1,7 @@
 # app.py
 
-from flask import Flask, render_template, request, jsonify, redirect, url_for
-from models import db, Transaction, Category, Project, AuditLog # 🟢 Import AuditLog
+from flask import Flask, render_template, request, jsonify
+from models import db, Transaction, Category, Project, AuditLog
 from sqlalchemy.exc import IntegrityError
 import os
 
@@ -14,15 +14,13 @@ db.init_app(app)
 # ===============================================
 # 🛠️ ฟังก์ชันสำหรับสร้างฐานข้อมูล
 # ===============================================
-
 with app.app_context():
-    # 💡 สำคัญ: รัน db.create_all() เพื่อสร้างตาราง AuditLog ใหม่
     db.create_all()
 
 # ===============================================
 # 🟢 ฟังก์ชัน Helper: สำหรับบันทึก Log
 # ===============================================
-def log_action(action, table_name, record_id, project_id, details=None, user='Admin'):
+def log_action(action, table_name, project_id, record_id=None, details=None, user='Admin'):
     """ฟังก์ชันช่วยบันทึกการกระทำลง AuditLog"""
     try:
         new_log = AuditLog(
@@ -36,61 +34,44 @@ def log_action(action, table_name, record_id, project_id, details=None, user='Ad
         db.session.add(new_log)
     except Exception as e:
         print(f"Error logging action: {e}")
-        # (ในระบบจริง ควรจัดการ Error นี้)
-
 
 # ===============================================
-# 🌐 Routes: ส่วนสำหรับให้บริการหน้าจอหลัก (Project List)
+# 🌐 Routes: ส่วนสำหรับให้บริการหน้าจอหลัก
 # ===============================================
-
 @app.route('/')
 def index():
-    """แสดงหน้าจอหลัก (รายการโครงการ)"""
     return render_template('index.html')
 
-
 # ===============================================
-# 🟢 API: Projects (เพิ่มการบันทึก Log)
+# 🟢 API: Projects (Full CRUD)
 # ===============================================
-
 @app.route('/api/projects', methods=['GET', 'POST'])
 def projects_api():
-    """จัดการ API สำหรับดึงและเพิ่มโครงการ"""
-    
     if request.method == 'GET':
         projects = Project.query.order_by(Project.name).all()
         return jsonify([p.to_dict() for p in projects])
 
     elif request.method == 'POST':
-        # (โค้ด POST Project เหมือนเดิม)
         data = request.get_json()
-        if not 'name' in data:
-            return jsonify({'message': 'Missing required field: name'}), 400
+        if not data or 'name' not in data or not data['name']:
+            return jsonify({'message': 'Project name is required.'}), 400
         
         try:
-            new_project = Project(
-                name=data['name'].strip(),
-                description=data.get('description', '')
-            )
+            new_project = Project(name=data['name'].strip(), description=data.get('description', ''))
             db.session.add(new_project)
             db.session.commit()
             
-            # 🟢 บันทึก Log การสร้าง Project
-            log_action('CREATE', 'Project', new_project.id, new_project.id, details=f"Project '{new_project.name}' created.")
+            log_action('CREATE', 'Project', new_project.id, new_project.id, f"Project '{new_project.name}' created.")
 
-            # (โค้ดเพิ่ม Master Data เริ่มต้นเหมือนเดิม)
+            # (เพิ่ม Master Data เริ่มต้น)
             initial_categories = [
-                {'name': 'ยอดขายพริก', 'type': 'Income'},
-                {'name': 'ค่าเมล็ดพันธุ์', 'type': 'Expense'},
-                {'name': 'ค่าปุ๋ย/ยา', 'type': 'Expense'},
+                {'name': 'ยอดขาย', 'type': 'Income'},
+                {'name': 'ค่าใช้จ่ายทั่วไป', 'type': 'Expense'},
             ]
             for cat in initial_categories:
-                new_cat = Category(name=cat['name'], type=cat['type'], project_id=new_project.id)
-                db.session.add(new_cat)
+                db.session.add(Category(name=cat['name'], type=cat['type'], project_id=new_project.id))
             
-            # 🟢 บันทึก Log การสร้าง Category เริ่มต้น
-            log_action('CREATE', 'Category', new_project.id, new_project.id, details="Initial categories created.")
-            
+            log_action('CREATE', 'Category', new_project.id, None, "Initial categories created.")
             db.session.commit()
             return jsonify({'message': 'Project created successfully', 'project': new_project.to_dict()}), 201
         
@@ -101,75 +82,133 @@ def projects_api():
             db.session.rollback()
             return jsonify({'message': f'An error occurred: {e}'}), 500
 
+@app.route('/api/projects/<int:project_id>', methods=['PUT', 'DELETE'])
+def project_detail_api(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    if request.method == 'PUT':
+        data = request.get_json()
+        if not data or 'name' not in data or not data['name']:
+            return jsonify({'message': 'Project name is required.'}), 400
+        
+        old_name = project.name
+        old_desc = project.description
+        
+        try:
+            project.name = data['name'].strip()
+            project.description = data.get('description', '')
+            
+            details = f"Project name: '{old_name}' -> '{project.name}', Desc: '{old_desc}' -> '{project.description}'"
+            log_action('UPDATE', 'Project', project_id, project_id, details)
+            
+            db.session.commit()
+            return jsonify({'message': 'Project updated.', 'project': project.to_dict()}), 200
+        except IntegrityError:
+            db.session.rollback()
+            return jsonify({'message': 'Project name already exists.'}), 409
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'message': f'An error occurred: {e}'}), 500
+
+    elif request.method == 'DELETE':
+        try:
+            # 🟢 Log ก่อนลบ (เพราะ cascade จะลบ project_id)
+            log_action('DELETE', 'Project', project_id, project_id, f"Project '{project.name}' and all related data deleted.")
+            
+            # (Cascade ใน models.py จะลบ Categories, Transactions, และ Logs ที่เกี่ยวข้องทั้งหมด)
+            db.session.delete(project)
+            db.session.commit()
+            return jsonify({'message': 'Project deleted successfully.'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'message': f'An error occurred: {e}'}), 500
+
 
 # ===============================================
-# 🟢 API: Categories (เพิ่มการบันทึก Log)
+# 🟢 API: Categories (Full CRUD)
 # ===============================================
-
 @app.route('/api/projects/<int:project_id>/categories', methods=['GET', 'POST'])
 def categories_api(project_id):
-    """จัดการ API สำหรับดึงและเพิ่มหมวดหมู่ของโครงการนั้น"""
+    Project.query.get_or_404(project_id) # ตรวจสอบว่า Project มีอยู่จริง
     
-    project = Project.query.get_or_404(project_id)
-
     if request.method == 'GET':
-        categories = Category.query.filter_by(project_id=project_id).order_by(Category.name).all()
+        categories = Category.query.filter_by(project_id=project_id).order_by(Category.type, Category.name).all()
         return jsonify([c.to_dict() for c in categories])
 
     elif request.method == 'POST':
         data = request.get_json()
         if not all(k in data for k in ('name', 'type')):
-            return jsonify({'message': 'Missing required fields (name, type)'}), 400
+            return jsonify({'message': 'Missing fields (name, type)'}), 400
         
         try:
-            new_category = Category(
-                name=data['name'].strip(),
-                type=data['type'].strip(),
-                project_id=project_id 
-            )
+            new_category = Category(name=data['name'].strip(), type=data['type'], project_id=project_id)
             db.session.add(new_category)
             db.session.commit()
-
-            # 🟢 บันทึก Log
-            log_action('CREATE', 'Category', new_category.id, project_id, details=f"Category '{new_category.name}' added.")
+            log_action('CREATE', 'Category', project_id, new_category.id, f"Category '{new_category.name}' created.")
             db.session.commit()
-
-            return jsonify({'message': 'Category added successfully', 'category': new_category.to_dict()}), 201
-        
+            return jsonify(new_category.to_dict()), 201
         except IntegrityError:
             db.session.rollback()
             return jsonify({'message': 'Category name already exists in this project.'}), 409
         except Exception as e:
             return jsonify({'message': f'An error occurred: {e}'}), 500
 
+@app.route('/api/categories/<int:category_id>', methods=['PUT', 'DELETE'])
+def category_detail_api(category_id):
+    category = Category.query.get_or_404(category_id)
+    project_id = category.project_id
+
+    if request.method == 'PUT':
+        data = request.get_json()
+        if not data or 'name' not in data or not data['name']:
+            return jsonify({'message': 'Category name is required.'}), 400
+        
+        try:
+            old_name = category.name
+            category.name = data['name'].strip()
+            log_action('UPDATE', 'Category', project_id, category_id, f"Category name: '{old_name}' -> '{category.name}'")
+            db.session.commit()
+            return jsonify(category.to_dict()), 200
+        except IntegrityError:
+            db.session.rollback()
+            return jsonify({'message': 'Category name already exists in this project.'}), 409
+        except Exception as e:
+            return jsonify({'message': f'An error occurred: {e}'}), 500
+
+    elif request.method == 'DELETE':
+        try:
+            # 🟢 ตรวจสอบว่ามี Transaction อ้างอิงหรือไม่ (ป้องกันการลบที่อันตราย)
+            if Transaction.query.filter_by(category_id=category_id).first():
+                return jsonify({'message': 'Cannot delete category: It is currently in use by transactions.'}), 409
+
+            log_action('DELETE', 'Category', project_id, category_id, f"Category '{category.name}' deleted.")
+            db.session.delete(category)
+            db.session.commit()
+            return jsonify({'message': 'Category deleted.'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'message': f'An error occurred: {e}'}), 500
 
 # ===============================================
-# 🟢 API: Transactions (เพิ่มการบันทึก Log และ PUT)
+# 🟢 API: Transactions (Full CRUD - เหมือนเดิม)
 # ===============================================
-
 @app.route('/api/projects/<int:project_id>/transactions', methods=['GET', 'POST'])
 def transactions_api(project_id):
-    """จัดการ API สำหรับดึงและบันทึกรายการของโครงการนั้น"""
-
-    project = Project.query.get_or_404(project_id)
+    Project.query.get_or_404(project_id)
     
-    # GET: ดึงรายการทั้งหมดของโครงการนั้น
     if request.method == 'GET':
         transactions = Transaction.query.filter_by(project_id=project_id).order_by(Transaction.date_recorded.desc()).all()
         return jsonify([t.to_dict() for t in transactions])
 
-    # POST: บันทึกรายการใหม่ของโครงการนั้น
     elif request.method == 'POST':
         data = request.get_json()
-        
         if not all(k in data for k in ('type', 'category_id', 'amount')):
             return jsonify({'message': 'Missing required fields'}), 400
-
         try:
             category_id = int(data['category_id'])
             if not Category.query.filter_by(id=category_id, project_id=project_id).first():
                  return jsonify({'message': 'Invalid category ID.'}), 400
-
+            
             new_transaction = Transaction(
                 type=data['type'],
                 category_id=category_id, 
@@ -178,112 +217,70 @@ def transactions_api(project_id):
                 description=data.get('description', '')
             )
             db.session.add(new_transaction)
-            db.session.commit() # Commit เพื่อรับ ID
-
-            # 🟢 บันทึก Log การสร้าง
-            log_action('CREATE', 'Transaction', new_transaction.id, project_id, details=f"Amount: {new_transaction.amount}, Category ID: {category_id}")
-            db.session.commit() # Commit Log
-
-            return jsonify({'message': 'Transaction added successfully', 'transaction': new_transaction.to_dict()}), 201
-        
+            db.session.commit()
+            log_action('CREATE', 'Transaction', project_id, new_transaction.id, f"Amount: {new_transaction.amount}, Desc: {new_transaction.description}")
+            db.session.commit()
+            return jsonify(new_transaction.to_dict()), 201
         except Exception as e:
             db.session.rollback()
             return jsonify({'message': f'An error occurred: {e}'}), 500
 
-
 @app.route('/api/transactions/<int:transaction_id>', methods=['PUT', 'DELETE'])
 def transaction_detail_api(transaction_id):
-    """🟢 API ใหม่: จัดการ แก้ไข (PUT) และ ลบ (DELETE)"""
-    
     transaction = Transaction.query.get_or_404(transaction_id)
-    project_id = transaction.project_id # ดึง Project ID สำหรับ Log
+    project_id = transaction.project_id
 
-    # ---------------------------------
-    # 🟢 PUT: การแก้ไขรายการ
-    # ---------------------------------
     if request.method == 'PUT':
         data = request.get_json()
-        changes = [] # เก็บรายการเปลี่ยนแปลงสำหรับ Log
-        
+        changes = []
         try:
-            # ตรวจสอบและอัปเดตแต่ละฟิลด์
             if 'type' in data and data['type'] != transaction.type:
                 changes.append(f"Type: {transaction.type} -> {data['type']}")
                 transaction.type = data['type']
-                
             if 'amount' in data and float(data['amount']) != transaction.amount:
                 changes.append(f"Amount: {transaction.amount} -> {data['amount']}")
                 transaction.amount = float(data['amount'])
-
             if 'category_id' in data and int(data['category_id']) != transaction.category_id:
                 new_cat_id = int(data['category_id'])
-                # ตรวจสอบว่า Category ID ใหม่ อยู่ใน Project เดียวกัน
                 if not Category.query.filter_by(id=new_cat_id, project_id=project_id).first():
                      return jsonify({'message': 'Invalid category ID.'}), 400
-                
-                changes.append(f"Category ID: {transaction.category_id} -> {new_cat_id}")
+                changes.append(f"Category: {transaction.category_ref.name} -> {Category.query.get(new_cat_id).name}")
                 transaction.category_id = new_cat_id
-
             if 'description' in data and data['description'] != transaction.description:
                 changes.append(f"Desc: '{transaction.description}' -> '{data['description']}'")
                 transaction.description = data['description']
 
             if changes:
-                # 🟢 บันทึก Log การแก้ไข
-                log_action(
-                    action='UPDATE', 
-                    table_name='Transaction', 
-                    record_id=transaction.id, 
-                    project_id=project_id,
-                    details='; '.join(changes)
-                )
+                log_action('UPDATE', 'Transaction', project_id, transaction.id, '; '.join(changes))
                 db.session.commit()
-                return jsonify({'message': 'Transaction updated successfully', 'transaction': transaction.to_dict()}), 200
+                return jsonify(transaction.to_dict()), 200
             else:
-                return jsonify({'message': 'No changes detected.'}), 200 # ไม่มีการเปลี่ยนแปลง
-                
+                return jsonify({'message': 'No changes detected.'}), 200
         except Exception as e:
             db.session.rollback()
-            return jsonify({'message': f'Failed to update transaction: {e}'}), 500
+            return jsonify({'message': f'An error occurred: {e}'}), 500
 
-    # ---------------------------------
-    # 🟢 DELETE: การลบรายการ
-    # ---------------------------------
     elif request.method == 'DELETE':
         try:
-            # 🟢 บันทึก Log การลบ (ก่อนลบจริง)
-            log_action(
-                action='DELETE', 
-                table_name='Transaction', 
-                record_id=transaction.id, 
-                project_id=project_id,
-                details=f"Deleted item. Amount: {transaction.amount}, Desc: {transaction.description}"
-            )
-            
-            db.session.delete(transaction_to_delete)
+            log_action('DELETE', 'Transaction', project_id, transaction.id, f"Deleted item (Amount: {transaction.amount})")
+            db.session.delete(transaction)
             db.session.commit()
-            return jsonify({'message': f'Transaction ID {transaction_id} deleted successfully'}), 200
-        
+            return jsonify({'message': 'Transaction deleted.'}), 200
         except Exception as e:
             db.session.rollback()
-            return jsonify({'message': f'Failed to delete transaction: {e}'}), 500
+            return jsonify({'message': f'An error occurred: {e}'}), 500
 
 # ===============================================
-# 🟢 API: Audit Log (สำหรับแสดงผลใน Frontend)
+# 🟢 API: Audit Log (เหมือนเดิม)
 # ===============================================
 @app.route('/api/projects/<int:project_id>/logs', methods=['GET'])
 def audit_log_api(project_id):
-    """ดึง Audit Log ทั้งหมดที่เกี่ยวข้องกับ Project นี้"""
-    
-    project = Project.query.get_or_404(project_id)
-    
-    logs = AuditLog.query.filter_by(project_id=project_id).order_by(AuditLog.timestamp.desc()).limit(50).all()
+    Project.query.get_or_404(project_id)
+    logs = AuditLog.query.filter_by(project_id=project_id).order_by(AuditLog.timestamp.desc()).limit(100).all()
     return jsonify([log.to_dict() for log in logs])
-
 
 # ===============================================
 # 🚀 รันแอปพลิเคชัน
 # ===============================================
-
 if __name__ == '__main__': 
     app.run(debug=True)
