@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
-# รัน Gunicorn โดยใช้ Python Module เพื่อให้หา Gunicorn ที่ติดตั้งใน venv เจอ
+# 1. ตั้งค่า FLASK_APP ก่อน
+export FLASK_APP=app.py 
+# 2. รัน Gunicorn โดยใช้ Python Module
 exec python -m gunicorn app:app
