@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-# รัน Python Module Gunicorn โดยใช้ Python Binary ใน Environment
+# รัน Gunicorn โดยใช้ Python Module เพื่อให้หา Gunicorn ที่ติดตั้งใน venv เจอ
 exec python -m gunicorn app:app
