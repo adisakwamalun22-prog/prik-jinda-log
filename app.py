@@ -3,12 +3,24 @@
 from flask import Flask, render_template, request, jsonify
 from models import db, Transaction, Category, Project, AuditLog
 from sqlalchemy.exc import IntegrityError
-import os
+import os # 🟢 เพิ่มบรรทัดนี้
 
 # การตั้งค่าแอปพลิเคชัน
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+
+# ------------------------------------------------------------------
+# 🟢 แก้ไขส่วนนี้: เปลี่ยนจาก SQLite เป็น PostgreSQL (Neon)
+# ------------------------------------------------------------------
+DATABASE_URL = os.environ.get('DATABASE_URL') # ดึง Connection String จาก Render Environment
+
+# ตรวจสอบและแก้ไข "postgres://" เป็น "postgresql://"
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# ------------------------------------------------------------------
+
 db.init_app(app)
 
 # ===============================================
@@ -112,10 +124,9 @@ def project_detail_api(project_id):
 
     elif request.method == 'DELETE':
         try:
-            # 🟢 Log ก่อนลบ (เพราะ cascade จะลบ project_id)
+            # Log ก่อนลบ (เพราะ cascade จะลบ project_id)
             log_action('DELETE', 'Project', project_id, project_id, f"Project '{project.name}' and all related data deleted.")
             
-            # (Cascade ใน models.py จะลบ Categories, Transactions, และ Logs ที่เกี่ยวข้องทั้งหมด)
             db.session.delete(project)
             db.session.commit()
             return jsonify({'message': 'Project deleted successfully.'}), 200
@@ -177,7 +188,6 @@ def category_detail_api(category_id):
 
     elif request.method == 'DELETE':
         try:
-            # 🟢 ตรวจสอบว่ามี Transaction อ้างอิงหรือไม่ (ป้องกันการลบที่อันตราย)
             if Transaction.query.filter_by(category_id=category_id).first():
                 return jsonify({'message': 'Cannot delete category: It is currently in use by transactions.'}), 409
 
@@ -190,7 +200,7 @@ def category_detail_api(category_id):
             return jsonify({'message': f'An error occurred: {e}'}), 500
 
 # ===============================================
-# 🟢 API: Transactions (Full CRUD - เหมือนเดิม)
+# 🟢 API: Transactions (Full CRUD)
 # ===============================================
 @app.route('/api/projects/<int:project_id>/transactions', methods=['GET', 'POST'])
 def transactions_api(project_id):
@@ -242,9 +252,10 @@ def transaction_detail_api(transaction_id):
                 transaction.amount = float(data['amount'])
             if 'category_id' in data and int(data['category_id']) != transaction.category_id:
                 new_cat_id = int(data['category_id'])
-                if not Category.query.filter_by(id=new_cat_id, project_id=project_id).first():
+                category = Category.query.filter_by(id=new_cat_id, project_id=project_id).first()
+                if not category:
                      return jsonify({'message': 'Invalid category ID.'}), 400
-                changes.append(f"Category: {transaction.category_ref.name} -> {Category.query.get(new_cat_id).name}")
+                changes.append(f"Category: {transaction.category_ref.name} -> {category.name}")
                 transaction.category_id = new_cat_id
             if 'description' in data and data['description'] != transaction.description:
                 changes.append(f"Desc: '{transaction.description}' -> '{data['description']}'")
@@ -271,7 +282,7 @@ def transaction_detail_api(transaction_id):
             return jsonify({'message': f'An error occurred: {e}'}), 500
 
 # ===============================================
-# 🟢 API: Audit Log (เหมือนเดิม)
+# 🟢 API: Audit Log
 # ===============================================
 @app.route('/api/projects/<int:project_id>/logs', methods=['GET'])
 def audit_log_api(project_id):
