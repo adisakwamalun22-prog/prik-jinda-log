@@ -5,111 +5,223 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🌶️ บันทึกรายรับ - รายจ่าย</title>
     <style>
+        :root {
+            --primary-color: #022344;
+            --accent-color: #f44336; /* สีแดงสำหรับลบ/เตือน */
+            --success-color: #2e7d32; /* สีเขียวสำหรับรายรับ */
+            --error-color: #d32f2f; /* สีแดงสำหรับรายจ่าย */
+            --bg-light: #f4f7f9;
+        }
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f7f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--bg-light);
             color: #333;
+            line-height: 1.6;
         }
         .container {
-            max-width: 900px;
-            margin: auto;
+            width: 95%;
+            max-width: 1000px;
+            margin: 20px auto;
             background: #fff;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
         }
         h1 {
-            color: #022344;
+            color: var(--primary-color);
             text-align: center;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--primary-color);
         }
+        h2 {
+            color: var(--primary-color);
+            border-left: 5px solid var(--primary-color);
+            padding-left: 10px;
+            margin-top: 30px;
+        }
+        
+        /* --- Forms and Inputs --- */
         .form-group {
             margin-bottom: 15px;
         }
-        input[type="number"], input[type="text"], select, input[type="date"] {
+        .input-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        input[type="number"], input[type="text"], select {
             width: 100%;
-            padding: 8px;
-            margin-top: 5px;
+            padding: 10px;
             box-sizing: border-box;
             border: 1px solid #ccc;
-            border-radius: 4px;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus {
+            border-color: var(--primary-color);
+            outline: none;
         }
         button {
-            background-color: #022344;
+            background-color: var(--primary-color);
             color: white;
-            padding: 10px 15px;
+            padding: 12px 15px;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             width: 100%;
-            font-size: 16px;
+            font-size: 1em;
+            transition: background-color 0.3s;
         }
         button:hover {
-            opacity: 0.9;
+            background-color: #003366; /* สีเข้มขึ้น */
         }
+
+        /* --- Category Management --- */
+        #addCategorySection {
+            background-color: var(--bg-light);
+            padding: 15px;
+            margin-top: 20px;
+            border: 1px dashed var(--primary-color);
+            border-radius: 8px;
+        }
+        .category-input-row {
+            display: flex;
+            gap: 10px;
+        }
+        .category-input-row input {
+            flex-grow: 1;
+        }
+        .category-input-row select, .category-input-row button {
+            width: 30%;
+            min-width: 100px;
+        }
+
+        /* --- Summary Dashboard --- */
+        .summary {
+            background-color: #e0f7fa;
+            padding: 20px;
+            margin-top: 30px;
+            border-radius: 8px;
+            display: flex;
+            flex-wrap: wrap; /* ให้ห่อลงบรรทัดใหม่เมื่อหน้าจอเล็ก */
+            justify-content: space-around;
+            text-align: center;
+            gap: 15px;
+        }
+        .summary > div {
+            flex-basis: 30%; /* แบ่งเป็น 3 คอลัมน์บนจอใหญ่ */
+            min-width: 150px; /* ไม่ให้เล็กเกินไปบนจอมือถือ */
+            padding: 5px;
+        }
+        .income { color: var(--success-color); font-weight: bold; }
+        .expense { color: var(--error-color); font-weight: bold; }
+        .profit { color: var(--primary-color); font-weight: bold; font-size: 1.4em; }
+        .profit.negative { color: var(--error-color); }
+
+        /* --- Table Styling (Responsive Table) --- */
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            font-size: 0.9em;
         }
         th, td {
             border: 1px solid #ddd;
-            padding: 8px;
+            padding: 10px 8px;
             text-align: left;
         }
         th {
-            background-color: #e8eaf6;
-            color: #022344;
+            background-color: var(--primary-color);
+            color: white;
+            position: sticky; /* ทำให้หัวตารางติดด้านบนเมื่อเลื่อน */
+            top: 0;
         }
-        .summary {
-            background-color: #e0f7fa;
-            padding: 15px;
-            margin-top: 20px;
-            border-radius: 4px;
-            display: flex;
-            justify-content: space-around;
-            text-align: center;
-        }
-        .income { color: #2e7d32; font-weight: bold; }
-        .expense { color: #d32f2f; font-weight: bold; }
-        .profit { color: #022344; font-weight: bold; font-size: 1.2em; }
         .delete-btn {
-            background-color: #f44336;
+            background-color: var(--accent-color);
             width: auto;
             padding: 5px 10px;
-            font-size: 12px;
+            font-size: 0.9em;
         }
-        #addCategorySection {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px dashed #022344;
-            border-radius: 4px;
+        .delete-btn:hover {
+            background-color: #b71c1c;
+        }
+        
+        /* --- Mobile Optimization --- */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px auto;
+                padding: 15px;
+            }
+            .input-row {
+                grid-template-columns: 1fr; /* บนมือถือแสดงเป็นคอลัมน์เดียว */
+            }
+            .summary {
+                flex-direction: column; /* บนมือถือเรียงจากบนลงล่าง */
+            }
+            .summary > div {
+                flex-basis: 100%;
+            }
+            
+            /* Responsive Table: ซ่อนคอลัมน์ที่ไม่จำเป็นบนจอเล็ก */
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+            thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+            td {
+                border: none;
+                border-bottom: 1px solid #eee;
+                position: relative;
+                padding-left: 50%; /* เว้นที่สำหรับ Label */
+                text-align: right;
+            }
+            td:before {
+                position: absolute;
+                top: 6px;
+                left: 6px;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                content: attr(data-label); /* ดึง Label จาก data-label ใน HTML */
+                font-weight: bold;
+                text-align: left;
+                color: var(--primary-color);
+            }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🌶️ บันทึกรายรับ-รายจ่าย </h1>
+    <h1>🌶️ บันทึกรายรับ-รายจ่าย</h1>
     <hr>
 
     <h2>📝 เพิ่มรายการใหม่</h2>
     <form id="transactionForm">
-        <div class="form-group">
-            <label for="type">ประเภท:</label>
-            <select id="type" required onchange="filterCategories()">
-                <option value="Expense">รายจ่าย</option>
-                <option value="Income">รายรับ</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="category_id">หมวดหมู่:</label>
-            <select id="category_id" required>
+        <div class="input-row">
+            <div class="form-group">
+                <label for="type">ประเภท:</label>
+                <select id="type" required onchange="filterCategories()">
+                    <option value="Expense">รายจ่าย</option>
+                    <option value="Income">รายรับ</option>
                 </select>
-        </div>
-        <div class="form-group">
-            <label for="amount">จำนวนเงิน:</label>
-            <input type="number" id="amount" step="0.01" min="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="category_id">หมวดหมู่:</label>
+                <select id="category_id" required>
+                    </select>
+            </div>
+            <div class="form-group">
+                <label for="amount">จำนวนเงิน:</label>
+                <input type="number" id="amount" step="0.01" min="0.01" required>
+            </div>
         </div>
         <div class="form-group">
             <label for="description">คำอธิบาย (optional):</label>
@@ -120,12 +232,14 @@
     
     <div id="addCategorySection">
         <h3>+ จัดการ/เพิ่มหมวดหมู่ใหม่</h3>
-        <input type="text" id="new_category_name" placeholder="ชื่อหมวดหมู่ใหม่">
-        <select id="new_category_type" style="width: 30%;">
-            <option value="Expense">รายจ่าย</option>
-            <option value="Income">รายรับ</option>
-        </select>
-        <button onclick="addNewCategory(event)" style="width: 30%; margin-top: 5px;">เพิ่มหมวดหมู่</button>
+        <div class="category-input-row">
+            <input type="text" id="new_category_name" placeholder="ชื่อหมวดหมู่ใหม่" style="flex-grow: 2;">
+            <select id="new_category_type">
+                <option value="Expense">รายจ่าย</option>
+                <option value="Income">รายรับ</option>
+            </select>
+            <button onclick="addNewCategory(event)">เพิ่ม</button>
+        </div>
     </div>
 
     <hr>
@@ -166,19 +280,14 @@
     const categorySelect = document.getElementById('category_id');
     const typeSelect = document.getElementById('type');
     
-    let allCategories = []; // เก็บ Master Data
+    let allCategories = []; 
 
-    // ------------------------------------------------------------------
-    // 🟢 จัดการ Master Data
-    // ------------------------------------------------------------------
     async function fetchCategories() {
         try {
             const response = await fetch('/api/categories');
             allCategories = await response.json();
             filterCategories();
-        } catch(error) {
-            console.error('Error fetching categories:', error);
-        }
+        } catch(error) { console.error('Error fetching categories:', error); }
     }
 
     function filterCategories() {
@@ -208,10 +317,7 @@
         const name = document.getElementById('new_category_name').value.trim();
         const type = document.getElementById('new_category_type').value;
 
-        if (!name) {
-            alert('โปรดระบุชื่อหมวดหมู่');
-            return;
-        }
+        if (!name) { alert('โปรดระบุชื่อหมวดหมู่'); return; }
 
         const response = await fetch('/api/categories', {
             method: 'POST',
@@ -224,16 +330,12 @@
         if (response.ok) {
             alert('เพิ่มหมวดหมู่สำเร็จ!');
             document.getElementById('new_category_name').value = '';
-            fetchCategories(); // โหลด Master Data ใหม่
+            fetchCategories(); 
         } else {
             alert('เพิ่มหมวดหมู่ไม่สำเร็จ: ' + result.message);
         }
     }
 
-
-    // ------------------------------------------------------------------
-    // 🟢 จัดการ Transactions
-    // ------------------------------------------------------------------
     async function fetchTransactions() {
         const response = await fetch('/api/transactions');
         const transactions = await response.json();
@@ -249,13 +351,14 @@
             const typeClass = t.type === 'Income' ? 'income' : 'expense';
             const row = tableBody.insertRow();
             
+            // 🟢 เพิ่ม data-label สำหรับ Responsive Table
             row.innerHTML = `
-                <td>${date}</td>
-                <td class="${typeClass}">${t.type === 'Income' ? 'รายรับ' : 'รายจ่าย'}</td>
-                <td>${t.category_name}</td>
-                <td class="${typeClass}">${parseFloat(t.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
-                <td>${t.description || '-'}</td>
-                <td><button class="delete-btn" data-id="${t.id}">ลบ</button></td>
+                <td data-label="วันที่">${date}</td>
+                <td data-label="ประเภท" class="${typeClass}">${t.type === 'Income' ? 'รายรับ' : 'รายจ่าย'}</td>
+                <td data-label="หมวดหมู่">${t.category_name}</td>
+                <td data-label="จำนวนเงิน" class="${typeClass}">${parseFloat(t.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                <td data-label="คำอธิบาย">${t.description || '-'}</td>
+                <td data-label="ลบ"><button class="delete-btn" data-id="${t.id}">ลบ</button></td>
             `;
         });
 
@@ -269,11 +372,8 @@
         let totalExpense = 0;
 
         transactions.forEach(t => {
-            if (t.type === 'Income') {
-                totalIncome += t.amount;
-            } else if (t.type === 'Expense') {
-                totalExpense += t.amount;
-            }
+            if (t.type === 'Income') { totalIncome += t.amount; } 
+            else if (t.type === 'Expense') { totalExpense += t.amount; }
         });
 
         const netProfit = totalIncome - totalExpense;
@@ -282,7 +382,7 @@
         totalExpenseEl.textContent = totalExpense.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + ' บาท';
         netProfitEl.textContent = netProfit.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + ' บาท';
         
-        netProfitEl.style.color = netProfit >= 0 ? '#2e7d32' : '#d32f2f'; 
+        netProfitEl.classList.toggle('negative', netProfit < 0);
     }
 
     form.addEventListener('submit', async (e) => {
@@ -290,7 +390,7 @@
         
         const data = {
             type: typeSelect.value,
-            category_id: document.getElementById('category_id').value, // 🟢 ส่ง ID แทนชื่อ
+            category_id: document.getElementById('category_id').value,
             amount: parseFloat(document.getElementById('amount').value),
             description: document.getElementById('description').value.trim()
         };
@@ -307,7 +407,7 @@
             alert('บันทึกสำเร็จ!');
             form.reset(); 
             fetchTransactions(); 
-            fetchCategories(); // เพื่อรีเซ็ตค่าใน dropdown
+            fetchCategories(); 
         } else {
             alert('บันทึกไม่สำเร็จ! ' + result.message);
         }
@@ -315,9 +415,7 @@
 
     async function handleDelete(e) {
         const transactionId = e.target.dataset.id;
-        if (!confirm(`คุณแน่ใจหรือไม่ที่จะลบรายการ ID: ${transactionId} ?`)) {
-            return;
-        }
+        if (!confirm(`คุณแน่ใจหรือไม่ที่จะลบรายการ ID: ${transactionId} ?`)) { return; }
 
         const response = await fetch(`/api/transactions/${transactionId}`, {
             method: 'DELETE',
@@ -331,7 +429,6 @@
         }
     }
 
-    // โหลดข้อมูลทั้งหมดเมื่อหน้าเว็บเปิด
     fetchCategories();
     fetchTransactions();
 </script>
